@@ -5,9 +5,7 @@ export function SiteFooter() {
         <div className="foot-grid">
           <div>
             <div className="foot-logo">
-              <span className="mark" aria-hidden="true">
-                ĐA
-              </span>
+              <img src="/logo.jpg" alt="Đông Á JSC" className="mark" />
               <div className="name" style={{ color: "#fff", fontFamily: "var(--font-oswald), sans-serif", fontSize: 18, fontWeight: 600 }}>
                 ĐÔNG Á
               </div>

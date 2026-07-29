@@ -1,12 +1,19 @@
 const r25 = [
-  ["Công suất làm lạnh định mức / tối đa", "2300 / 2500 W"],
-  ["Lưu lượng gió định mức / tối đa", "380 / 450 m³/h"],
-  ["Hệ số hiệu suất năng lượng (EER)", "2.6 W/W"],
+  ["Công suất làm mát định mức", "2300 W"],
+  ["Khả năng làm mát tối đa", "2500 W"],
   ["Công suất tiêu thụ điện", "850 W"],
-  ["Điện áp sử dụng", "24 V"],
-  ["Trọng lượng", "30 kg"],
-  ["Kích thước dàn lạnh (trong cabin)", "465 × 265 mm"],
+  ["Lưu lượng gió", "380 m³/h"],
+  ["Hệ số hiệu suất năng lượng (EER)", "2.6 W/W"],
   ["Kích thước dàn nóng (ngoài mui)", "960 × 730 × 185 mm"],
+  ["Kích thước dàn lạnh (trong cabin)", "465 × 265 mm"],
+  ["Lượng chất làm lạnh nạp vào", "560 ± 5% g"],
+  ["Loại chất làm lạnh", "R134a"],
+  ["Điện áp thích ứng", "24 V"],
+  ["Loại máy nén", "Máy nén rôto kép biến tần DC"],
+  ["Phạm vi nhiệt độ có thể điều chỉnh", "16 – 32 °C"],
+  ["Trọng lượng", "30 kg"],
+  ["Độ ồn", "65 dB(A)"],
+  ["Xếp hạng chống nước", "IPX6"],
 ]
 
 const r20 = [

@@ -10,6 +10,7 @@ import { Trucks } from "@/components/trucks"
 import { Partners } from "@/components/partners"
 import { CtaBand } from "@/components/cta-band"
 import { SiteFooter } from "@/components/site-footer"
+import { FloatingContact } from "@/components/floating-contact"
 
 export default function Page() {
   return (
@@ -28,6 +29,7 @@ export default function Page() {
         <CtaBand />
       </main>
       <SiteFooter />
+      <FloatingContact />
     </div>
   )
 }
