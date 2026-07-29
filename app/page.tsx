@@ -7,6 +7,7 @@ import { Specs } from "@/components/specs"
 import { Compare } from "@/components/compare"
 import { Gallery } from "@/components/gallery"
 import { Trucks } from "@/components/trucks"
+import { Partners } from "@/components/partners"
 import { CtaBand } from "@/components/cta-band"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -23,6 +24,7 @@ export default function Page() {
         <Compare />
         <Gallery />
         <Trucks />
+        <Partners />
         <CtaBand />
       </main>
       <SiteFooter />
