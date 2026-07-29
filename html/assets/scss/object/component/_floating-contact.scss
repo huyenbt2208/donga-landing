@@ -1,0 +1,124 @@
+// ===================================================================
+// Component / Floating contact
+// Fixed Zalo + hotline call buttons, always reachable while scrolling.
+// ===================================================================
+
+.c-floating-contact {
+  position: fixed;
+  right: 18px;
+  bottom: 140px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+
+  @include mq(mobile) {
+    right: 10px;
+    bottom: 90px;
+    gap: 10px;
+  }
+
+  &__zalo {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #0068ff;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    border: 2px solid #fff;
+    box-shadow: 0 6px 16px rgba(0, 104, 255, 0.45);
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: scale(1.06);
+    }
+
+    @include mq(mobile) {
+      width: 46px;
+      height: 46px;
+      font-size: 10px;
+    }
+  }
+
+  &__phone {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 8px 8px 18px;
+    border-radius: 999px;
+    color: #fff;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateX(-4px);
+    }
+
+    &--orange {
+      background: #f7941d;
+    }
+
+    &--green {
+      background: #4caf50;
+    }
+
+    @include mq(mobile) {
+      font-size: 13px;
+      padding: 6px 6px 6px 14px;
+    }
+  }
+
+  &__phone-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    svg {
+      animation: fc-ring 1.6s ease-in-out infinite;
+    }
+
+    @include mq(mobile) {
+      width: 30px;
+      height: 30px;
+    }
+  }
+}
+
+@keyframes fc-ring {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(-15deg);
+  }
+  20% {
+    transform: rotate(12deg);
+  }
+  30% {
+    transform: rotate(-10deg);
+  }
+  40% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+}

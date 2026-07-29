@@ -1,0 +1,31 @@
+// ===================================================================
+// Component / Section head
+// Eyebrow + title + intro paragraph combo repeated at the top of
+// every page section.
+// ===================================================================
+
+.c-section-head {
+  max-width: 640px;
+  margin-bottom: 48px;
+
+  &__title {
+    font-size: clamp(26px, 3.2vw, 38px);
+    margin: 12px 0 14px;
+    color: var(--navy-deep);
+    font-weight: 700;
+  }
+
+  &__desc {
+    color: var(--ink-soft);
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+
+  &--on-dark &__title {
+    color: #fff;
+  }
+
+  &--on-dark &__desc {
+    color: #93a2ba;
+  }
+}

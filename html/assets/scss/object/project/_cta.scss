@@ -1,0 +1,41 @@
+// ===================================================================
+// Project / CTA band
+// ===================================================================
+
+.p-cta {
+  background: linear-gradient(120deg, var(--orange) 0%, var(--orange-dark) 100%);
+  color: #fff;
+  padding: 52px 0;
+
+  .l-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 22px;
+
+    @include mq(tablet) {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  &__title {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  &__desc {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+  }
+
+  .c-btn--primary {
+    background: #fff;
+    color: var(--orange-dark);
+
+    &:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    }
+  }
+}

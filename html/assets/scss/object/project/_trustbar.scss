@@ -1,0 +1,40 @@
+// ===================================================================
+// Project / Trust bar
+// ===================================================================
+
+.p-trustbar {
+  background: var(--navy-deep);
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+
+  .l-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  &__message {
+    color: #93a2ba;
+    font-size: 12.5px;
+    max-width: 240px;
+    line-height: 1.5;
+  }
+
+  &__brands {
+    display: flex;
+    gap: 34px;
+    flex-wrap: wrap;
+    list-style: none;
+  }
+
+  &__brand {
+    color: #e6ebf2;
+    font-family: var(--font-heading);
+    font-weight: 500;
+    font-size: 14.5px;
+    letter-spacing: 0.03em;
+    opacity: 0.85;
+  }
+}

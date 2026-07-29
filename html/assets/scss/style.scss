@@ -1,0 +1,42 @@
+// ===================================================================
+// ĐÔNG Á / WEBASTO LANDING — main stylesheet
+// Architecture: FLOCSS (Foundation / Layout / Object[Component,Project,Utility])
+// https://github.com/hiloki/flocss
+// ===================================================================
+
+// ---- Foundation ----
+@import 'foundation/variables';
+@import 'foundation/mixin';
+@import 'foundation/reset';
+@import 'foundation/base';
+
+// ---- Layout ----
+@import 'layout/container';
+@import 'layout/section';
+@import 'layout/header';
+@import 'layout/footer';
+
+// ---- Object: Component ----
+@import 'object/component/logo';
+@import 'object/component/button';
+@import 'object/component/eyebrow';
+@import 'object/component/section-head';
+@import 'object/component/chip';
+@import 'object/component/badge';
+@import 'object/component/table';
+@import 'object/component/floating-contact';
+
+// ---- Object: Project ----
+@import 'object/project/hero';
+@import 'object/project/trustbar';
+@import 'object/project/why';
+@import 'object/project/products';
+@import 'object/project/specs';
+@import 'object/project/compare';
+@import 'object/project/gallery';
+@import 'object/project/trucks';
+@import 'object/project/partners';
+@import 'object/project/cta';
+
+// ---- Object: Utility ----
+@import 'object/utility/utility';

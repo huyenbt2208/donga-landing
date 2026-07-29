@@ -1,0 +1,44 @@
+// ===================================================================
+// Project / Why Webasto
+// ===================================================================
+
+.p-why {
+  background: var(--paper);
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+
+    @include mq(tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__card {
+    background: var(--da-ivory);
+    border: 1px solid #e6e1d6;
+    border-radius: 14px;
+    padding: 28px 24px;
+  }
+
+  &__card-num {
+    font-family: var(--font-heading);
+    font-size: 13px;
+    color: var(--red);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  &__card-title {
+    font-size: 19px;
+    margin: 12px 0 10px;
+    color: var(--navy-deep);
+  }
+
+  &__card-body {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}

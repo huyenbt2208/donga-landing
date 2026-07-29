@@ -1,0 +1,37 @@
+// ===================================================================
+// Project / Gallery
+// ===================================================================
+
+.p-gallery {
+  background: var(--da-ivory);
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+
+    @include mq(tablet) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__item {
+    background: var(--paper);
+    border: 1px solid #e6e1d6;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  &__item-img {
+    height: 150px;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  &__item-caption {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy-deep);
+  }
+}

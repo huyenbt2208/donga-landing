@@ -1,0 +1,15 @@
+// ===================================================================
+// Foundation / Mixins
+// ===================================================================
+
+@mixin mq($bp) {
+  @if $bp == tablet {
+    @media (max-width: $bp-tablet) {
+      @content;
+    }
+  } @else if $bp == mobile {
+    @media (max-width: $bp-mobile) {
+      @content;
+    }
+  }
+}

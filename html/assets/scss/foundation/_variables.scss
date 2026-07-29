@@ -1,0 +1,33 @@
+// ===================================================================
+// Foundation / Variables
+// Design tokens. Exposed as CSS custom properties (runtime-themeable)
+// plus a handful of Sass variables for compile-time needs (breakpoints).
+// ===================================================================
+
+:root {
+  --navy-deep: #000000;
+  --navy: #0a0a0a;
+  --navy-mid: #1a1a1a;
+  --steel: #3a3a3a;
+
+  --red: #c8142b;
+  --red-dark: #8f0e1f;
+
+  --orange: #dc5418;
+  --orange-dark: #a53f10;
+  --amber: #dc5418;
+
+  --da-ivory: #f6f4ef;
+  --paper: #ffffff;
+
+  --ink: #0d1420;
+  --ink-soft: #4a5568;
+  --line: rgba(255, 255, 255, 0.12);
+
+  --font-heading: 'Oswald', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+// Sass-level breakpoints (compile-time only, used by the mq() mixin).
+$bp-tablet: 900px;
+$bp-mobile: 480px;

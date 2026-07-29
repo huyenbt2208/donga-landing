@@ -1,0 +1,10 @@
+// ===================================================================
+// Layout / Section
+// Shared vertical rhythm applied to every top-level content section.
+// Project partials loaded after this may override where needed
+// (e.g. `.p-trucks` uses a tighter 64px rhythm).
+// ===================================================================
+
+.l-section {
+  padding: 84px 0;
+}

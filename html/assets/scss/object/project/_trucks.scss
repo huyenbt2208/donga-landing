@@ -1,0 +1,74 @@
+// ===================================================================
+// Project / Trucks
+// ===================================================================
+
+.p-trucks {
+  background: var(--navy-deep);
+  color: #fff;
+  padding: 64px 0;
+
+  .c-section-head {
+    text-align: center;
+  }
+
+  &__lead {
+    color: #c9d3e0;
+    font-size: 15px;
+    max-width: 640px;
+    margin: 8px auto 34px;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+
+    @include mq(tablet) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__card {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #0a1a30;
+
+    &:hover .p-trucks__card-img {
+      transform: scale(1.06);
+    }
+  }
+
+  &__card-img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+
+    @include mq(tablet) {
+      height: 220px;
+    }
+  }
+
+  &__card-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+  }
+
+  &__card-caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 26px 14px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(180deg, transparent, rgba(4, 10, 22, 0.9));
+  }
+}

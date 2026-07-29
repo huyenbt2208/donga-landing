@@ -1,0 +1,22 @@
+// ===================================================================
+// Component / Chip
+// Small outlined pill used for feature/spec highlights (why-card tag,
+// product spec tags).
+// ===================================================================
+
+.c-chip {
+  display: inline-block;
+  background: var(--da-ivory);
+  border: 1px solid #e6e1d6;
+  color: var(--navy-mid);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+
+  &--accent {
+    background: #fff;
+    color: var(--red);
+    margin-top: 14px;
+  }
+}

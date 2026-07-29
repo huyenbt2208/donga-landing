@@ -1,0 +1,78 @@
+// ===================================================================
+// Component / Table
+// Base table styling extended by the spec-sheet and compare tables.
+// ===================================================================
+
+.c-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+
+  // ---- Spec-sheet variant: dark card, key/value rows ----
+  &--specs {
+    td {
+      padding: 11px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .c-table__key {
+      color: #93a2ba;
+    }
+
+    .c-table__value {
+      text-align: right;
+      font-weight: 600;
+      color: #fff;
+    }
+  }
+
+  // ---- Compare variant: light card, header row + zebra stripes ----
+  &--compare {
+    border: 1px solid #e6e1d6;
+    border-radius: 14px;
+    overflow: hidden;
+    font-size: 14px;
+
+    th,
+    td {
+      padding: 15px 18px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: var(--navy-deep);
+      color: #fff;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) {
+      background: #faf9f6;
+    }
+
+    .c-table__label {
+      color: var(--ink-soft);
+      font-weight: 500;
+    }
+
+    .c-table__r25 {
+      font-weight: 700;
+      color: var(--red);
+    }
+
+    .c-table__r20 {
+      font-weight: 700;
+      color: #555;
+    }
+  }
+}

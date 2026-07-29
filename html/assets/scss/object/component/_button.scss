@@ -1,0 +1,37 @@
+// ===================================================================
+// Component / Button
+// ===================================================================
+
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+
+  &--primary {
+    background: var(--orange);
+    color: #fff;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(220, 84, 24, 0.4);
+    }
+  }
+
+  &--ghost {
+    border: 1.5px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+
+    &:hover {
+      border-color: #fff;
+    }
+  }
+}
