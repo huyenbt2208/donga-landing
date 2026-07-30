@@ -9,10 +9,6 @@
   position: relative;
   overflow: hidden;
 
-  @include mq(tablet) {
-    padding: 54px 0;
-  }
-
   &::after {
     content: '';
     position: absolute;
@@ -21,22 +17,52 @@
     pointer-events: none;
   }
 
+  padding: 34px 0;
+
+  @include mq(tablet) {
+    padding: 34px 0;
+  }
+
   .l-container {
     position: relative;
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
-    gap: 48px;
+    grid-template-areas:
+      'eyebrow visual'
+      'title   visual'
+      'lead    visual'
+      'badges  visual'
+      'cta     visual'
+      'stats   visual';
+    gap: 0 48px;
     align-items: center;
     padding-top: 76px;
     padding-bottom: 60px;
 
+    // Mobile: lead with the visual right after the pitch, so the product
+    // photo lands before the fine print — trust badges/CTA/stats follow.
     @include mq(tablet) {
       grid-template-columns: 1fr;
-      padding-top: 40px;
+      grid-template-areas:
+        'eyebrow'
+        'title'
+        'lead'
+        'visual'
+        'badges'
+        'cta'
+        'stats';
+      gap: 0;
+      padding-top: 28px;
+      padding-bottom: 36px;
     }
   }
 
+  .c-eyebrow {
+    grid-area: eyebrow;
+  }
+
   &__title {
+    grid-area: title;
     font-size: clamp(34px, 4.6vw, 54px);
     line-height: 1.06;
     font-weight: 700;
@@ -53,6 +79,7 @@
   }
 
   &__lead {
+    grid-area: lead;
     font-size: 16.5px;
     line-height: 1.65;
     color: #c9d3e0;
@@ -61,39 +88,82 @@
   }
 
   &__badges {
+    grid-area: badges;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 10px;
     margin-bottom: 26px;
+
+    @include mq(tablet) {
+      margin-top: 8px;
+    }
   }
 
   &__badge {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 500;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 600;
     color: #e6ebf2;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--line);
+    padding: 8px 14px 8px 12px;
+    border-radius: 999px;
+    white-space: nowrap;
 
     svg {
       flex-shrink: 0;
       color: var(--amber);
     }
+
+    &--strong {
+      background: linear-gradient(120deg, var(--orange) 0%, var(--red) 100%);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(220, 84, 24, 0.35);
+
+      svg {
+        color: #fff;
+      }
+    }
+
+    @include mq(mobile) {
+      font-size: 12.5px;
+      white-space: normal;
+    }
   }
 
   &__cta {
+    grid-area: cta;
     display: flex;
     gap: 14px;
     flex-wrap: wrap;
     margin-bottom: 38px;
+
+    @include mq(mobile) {
+      flex-direction: column;
+      margin-bottom: 28px;
+
+      .c-btn {
+        width: 100%;
+      }
+    }
   }
 
   &__stats {
+    grid-area: stats;
     display: flex;
     gap: 28px;
     flex-wrap: wrap;
     border-top: 1px solid var(--line);
     padding-top: 22px;
+
+    @include mq(mobile) {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px 12px;
+    }
   }
 
   &__stat-value {
@@ -109,33 +179,49 @@
   }
 
   &__visual {
+    grid-area: visual;
     position: relative;
+
+    @include mq(tablet) {
+      margin: 10px 0 28px;
+    }
   }
 
   &__pill {
     position: absolute;
     top: -18px;
     right: 6px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--line);
-    backdrop-filter: blur(6px);
+    background: linear-gradient(120deg, var(--orange) 0%, var(--red) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 10px 24px rgba(220, 84, 24, 0.4);
     border-radius: 12px;
     padding: 12px 16px;
     color: #fff;
     text-align: right;
     z-index: 3;
+
+    @include mq(mobile) {
+      top: -14px;
+      right: 10px;
+      padding: 9px 13px;
+      border-radius: 10px;
+    }
   }
 
   &__pill-value {
     font-family: var(--font-heading);
     font-size: 26px;
     display: block;
-    color: var(--amber);
+    color: #fff;
+
+    @include mq(mobile) {
+      font-size: 21px;
+    }
   }
 
   &__pill-label {
     font-size: 11px;
-    color: #c9d3e0;
+    color: rgba(255, 255, 255, 0.85);
   }
 
   &__stack {
@@ -146,6 +232,11 @@
     border: 1px solid var(--line);
     border-radius: 18px;
     padding: 18px;
+
+    @include mq(mobile) {
+      gap: 10px;
+      padding: 14px;
+    }
   }
 
   &__card {
@@ -159,6 +250,10 @@
 
       .p-hero__card-img {
         height: 210px;
+
+        @include mq(mobile) {
+          height: 170px;
+        }
       }
     }
   }
@@ -167,6 +262,10 @@
     width: 100%;
     height: 150px;
     object-fit: cover;
+
+    @include mq(mobile) {
+      height: 110px;
+    }
   }
 
   &__card-label {

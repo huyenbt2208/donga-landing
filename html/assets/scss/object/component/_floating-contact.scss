@@ -13,6 +13,19 @@
   align-items: flex-end;
   gap: 14px;
 
+  // Hidden until the visitor scrolls past the hero, so it never sits on
+  // top of the hero's own CTA buttons on a mobile first view.
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+
+  &.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
   @include mq(mobile) {
     right: 10px;
     bottom: 90px;
