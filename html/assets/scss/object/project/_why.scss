@@ -7,7 +7,7 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
 
     @include mq(tablet) {
@@ -40,5 +40,21 @@
     color: var(--ink-soft);
     font-size: 14px;
     line-height: 1.6;
+  }
+
+  &__note {
+    margin-top: 28px;
+    padding: 18px 22px;
+    background: var(--da-ivory);
+    border: 1px solid #e6e1d6;
+    border-left: 3px solid var(--red);
+    border-radius: 8px;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.65;
+
+    strong {
+      color: var(--navy-deep);
+    }
   }
 }

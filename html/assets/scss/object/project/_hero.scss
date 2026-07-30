@@ -9,6 +9,10 @@
   position: relative;
   overflow: hidden;
 
+  @include mq(tablet) {
+    padding: 54px 0;
+  }
+
   &::after {
     content: '';
     position: absolute;
@@ -54,6 +58,27 @@
     color: #c9d3e0;
     max-width: 520px;
     margin-bottom: 28px;
+  }
+
+  &__badges {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #e6ebf2;
+
+    svg {
+      flex-shrink: 0;
+      color: var(--amber);
+    }
   }
 
   &__cta {
