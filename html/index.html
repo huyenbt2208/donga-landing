@@ -41,7 +41,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Oswald:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
     rel="stylesheet">
 
   <link rel="stylesheet" href="assets/css/style.css">
@@ -105,32 +105,39 @@
       </div>
     </div>
 
-    <div class="l-header__main">
-      <div class="l-container">
-        <a href="#top" class="c-logo" aria-label="Đông Á — Điều hòa Webasto chính hãng">
-          <img src="assets/img/logo.jpg" alt="Đông Á JSC" class="c-logo__mark" width="110" height="66">
-          <span class="c-logo__name">ĐÔNG Á<small class="c-logo__tagline hidden-pc">ĐIỀU HÒA WEBASTO<br
-                class="hidden-pc"> CHÍNH
-              HÃNG</small></span>
+    <nav class="l-header__navbar" aria-label="Điều hướng chính">
+      <div class="l-container l-header__nav-inner">
+        <a href="#top" class="l-header__brand" aria-label="Đông Á — Điều hòa Webasto chính hãng">
+          <img src="assets/img/logo.jpg" alt="Đông Á JSC" class="l-header__brand-mark" width="60" height="46">
+          <span class="l-header__brand-text">
+            <span class="l-header__brand-name">ĐÔNG Á</span>
+            <span class="l-header__brand-tag">Điều hòa Webasto <br class="hidden-pc"> chính hãng</span>
+          </span>
         </a>
-        <nav class="l-header__nav" aria-label="Điều hướng chính">
-          <a class="l-header__nav-link" href="#why">Vì sao chọn</a>
-          <a class="l-header__nav-link" href="#products">Sản phẩm</a>
-          <a class="l-header__nav-link" href="#specs">Thông số</a>
-          <a class="l-header__nav-link" href="#trucks">Xe thực tế</a>
-          <a class="l-header__nav-link" href="#gallery">Hàng có sẵn</a>
-        </nav>
-        <a href="#cta" class="c-btn c-btn--primary">Nhận báo giá ngay</a>
+        <div class="l-header__navlinks">
+          <a class="l-header__navlink" href="#why">Vì sao chọn</a>
+          <a class="l-header__navlink" href="#products">Sản phẩm</a>
+          <a class="l-header__navlink" href="#specs">Thông số</a>
+          <a class="l-header__navlink" href="#trucks">Xe thực tế</a>
+          <a class="l-header__navlink" href="#gallery">Hàng có sẵn</a>
+        </div>
+        <a href="#cta" class="l-header__cta">Nhận báo giá ngay</a>
       </div>
-    </div>
+    </nav>
   </header>
 
   <main id="main">
     <!-- ============ HERO ============ -->
-    <section id="top" class="p-hero l-section">
-      <div class="l-container">
+    <section id="top" class="p-hero">
+      <div class="p-hero__seam" aria-hidden="true">
+        <span class="p-hero__seam-hot">40°C NGOÀI CABIN</span>
+        <span class="p-hero__seam-cold">22°C TRONG CABIN</span>
+      </div>
+
+      <div class="l-container p-hero__grid">
         <div>
-          <p class="c-eyebrow">Webasto R25 &amp; R20 · Điều hòa đỗ xe</p>
+          <p class="p-hero__eyebrow"><span class="p-hero__eyebrow-dot"></span> WEBASTO R25 &amp; R20 · ĐIỀU HÒA ĐỖ XE
+          </p>
           <h1 class="p-hero__title">
             ĐẲNG CẤP <span class="p-hero__title-accent">ĐỨC</span><br>
             CHO <span class="p-hero__title-outline">CABIN</span> XE TẢI VIỆT
@@ -141,31 +148,16 @@
             giấc ngủ thật, tiết kiệm dầu, giữ đồ cơ.
           </p>
           <ul class="p-hero__badges">
-            <li class="p-hero__badge p-hero__badge--strong">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              Chính hãng Đức 100%
-            </li>
-            <li class="p-hero__badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              Nhập khẩu chính ngạch · CO/CQ rõ ràng
-            </li>
-            <li class="p-hero__badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-              Xuất hóa đơn VAT đầy đủ
-            </li>
+            <li class="p-hero__badge p-hero__badge--strong"><span class="p-hero__badge-check">✓</span> Bảo hành 18
+              tháng · 1 đổi 1</li>
+            <li class="p-hero__badge"><span class="p-hero__badge-check">✓</span> Chính hãng Đức 100%</li>
+            <li class="p-hero__badge"><span class="p-hero__badge-check">✓</span> Nhập khẩu chính ngạch · CO/CQ rõ
+              ràng</li>
+            <li class="p-hero__badge"><span class="p-hero__badge-check">✓</span> Xuất hóa đơn VAT đầy đủ</li>
           </ul>
           <div class="p-hero__cta">
             <a href="#cta" class="c-btn c-btn--primary">Nhận báo giá &amp; tư vấn lắp »</a>
-            <a href="#products" class="c-btn c-btn--ghost">Xem 2 dòng sản phẩm</a>
+            <a href="#products" class="c-btn c-btn--outline-dark">Xem 2 dòng sản phẩm</a>
           </div>
           <ul class="p-hero__stats">
             <li class="p-hero__stat"><b class="p-hero__stat-value">2 dòng máy</b><span class="p-hero__stat-label">R25 2
@@ -179,27 +171,33 @@
           </ul>
         </div>
 
-        <div class="p-hero__visual">
-          <div class="p-hero__pill">
-            <b class="p-hero__pill-value">22°C</b>
-            <span class="p-hero__pill-label">từ 40°C nắng gắt ↓</span>
+        <div class="p-hero__stage">
+          <div class="p-hero__gauge">
+            <div class="p-hero__gauge-temp">22°C</div>
+            <div class="p-hero__gauge-desc">từ 40°C nắng gắt <b>↓ chỉ trong vài phút</b></div>
           </div>
-          <div class="p-hero__stack">
-            <figure class="p-hero__card p-hero__card--big">
-              <img class="p-hero__card-img" src="assets/img/webasto-r25-red.jpg"
-                alt="Webasto R25 — 2 quạt, đỏ Trung Hoa" width="560" height="210" loading="eager" decoding="async"
-                fetchpriority="high">
-              <figcaption class="p-hero__card-label">Webasto R25 — 2 quạt, đỏ Trung Hoa</figcaption>
+
+          <figure class="p-hero__stage-main">
+            <img src="assets/img/webasto-r25-red.jpg" alt="Webasto R25 — 2 quạt, đỏ Trung Hoa" width="560"
+              height="210" loading="eager" decoding="async" fetchpriority="high">
+            <figcaption class="p-hero__stage-caption">
+              <span>
+                <b class="p-hero__stage-name">Webasto R25 — 2 quạt, đỏ Trung Hoa</b>
+                <span class="p-hero__stage-desc">Dòng chủ lực, làm lạnh nhanh cho cabin lớn</span>
+              </span>
+              <span class="p-hero__stage-arrow">→</span>
+            </figcaption>
+          </figure>
+
+          <div class="p-hero__thumbs">
+            <figure class="p-hero__thumb">
+              <img src="assets/img/webasto-r20.jpg" alt="Webasto R20 — 1 quạt" loading="lazy" decoding="async">
+              <figcaption><b>Webasto R20</b><span>1 quạt</span></figcaption>
             </figure>
-            <figure class="p-hero__card">
-              <img class="p-hero__card-img" src="assets/img/webasto-r20.jpg" alt="Webasto R20 — 1 quạt" width="270"
-                height="150" loading="eager" decoding="async">
-              <figcaption class="p-hero__card-label">Webasto R20 — 1 quạt</figcaption>
-            </figure>
-            <figure class="p-hero__card">
-              <img class="p-hero__card-img" src="assets/img/webasto-cassette.jpg" alt="Dàn lạnh Webasto lắp trong cabin"
-                width="270" height="150" loading="eager" decoding="async">
-              <figcaption class="p-hero__card-label">Dàn lạnh trong cabin</figcaption>
+            <figure class="p-hero__thumb">
+              <img src="assets/img/webasto-cassette.jpg" alt="Dàn lạnh Webasto lắp trong cabin" loading="lazy"
+                decoding="async">
+              <figcaption><b>Dàn lạnh</b><span>trong cabin</span></figcaption>
             </figure>
           </div>
         </div>
@@ -212,28 +210,73 @@
         <p class="p-trustbar__message">Trang bị chính hãng cho các dòng xe lớn tại Việt Nam, lắp đặt bởi Đông Á Group
         </p>
         <ul class="p-trustbar__brands">
-          <li class="p-trustbar__brand">FAW JieFang</li>
+          <li class="p-trustbar__brand">SINOTRUK-HOWO</li>
           <li class="p-trustbar__brand">SHACMAN</li>
-          <li class="p-trustbar__brand">SINOTRUK · HOWO</li>
-          <li class="p-trustbar__brand">Foton Daimler</li>
+          <li class="p-trustbar__brand">DONGFENG</li>
+          <li class="p-trustbar__brand">FAW</li>
+          <li class="p-trustbar__brand">FOTON</li>
+          <li class="p-trustbar__brand">VCHENGLONG</li>
         </ul>
       </div>
     </div>
 
     <!-- ============ WARRANTY HIGHLIGHT ============ -->
-    <div class="p-warranty">
-      <div class="l-container">
-        <svg class="p-warranty__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2l8 4v6c0 5-3.4 8.7-8 10-4.6-1.3-8-5-8-10V6l8-4z" fill="#fff" fill-opacity="0.15" stroke="#fff"
-            stroke-width="1.5" />
-          <path d="M8.5 12.2l2.4 2.4 4.6-4.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
-        <p class="p-warranty__text">
-          <strong>Bảo hành 18 tháng</strong> — được thay thế bằng phụ tùng chính hãng hoặc <strong>1 đổi 1</strong>
-        </p>
+    <section class="p-warranty" aria-labelledby="warranty-heading">
+      <div class="p-warranty__glow" aria-hidden="true"></div>
+      <div class="p-warranty__road" aria-hidden="true"></div>
+      <div class="p-warranty__streak" style="width:280px; top:38%; left:8%;" aria-hidden="true"></div>
+      <div class="p-warranty__streak" style="width:180px; top:64%; left:22%;" aria-hidden="true"></div>
+      <div class="p-warranty__streak" style="width:220px; top:22%; right:14%;" aria-hidden="true"></div>
+
+      <div class="l-container p-warranty__inner">
+        <div class="p-warranty__shield">
+          <svg viewBox="0 0 172 190" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M86 4 L166 30 V88 C166 138 132 168 86 186 C40 168 6 138 6 88 V30 Z" fill="url(#warrantyGrad)"
+              stroke="#FBA98C" stroke-width="2" />
+            <path d="M50 96 L74 120 L124 66" stroke="#fff" stroke-width="7" stroke-linecap="round"
+              stroke-linejoin="round" opacity=".25" />
+            <defs>
+              <linearGradient id="warrantyGrad" x1="6" y1="4" x2="166" y2="186" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#1C4E68" />
+                <stop offset="1" stop-color="#0A1A24" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="p-warranty__shield-num">18<small>THÁNG BẢO HÀNH</small></div>
+        </div>
+
+        <div class="p-warranty__copy">
+          <p class="p-warranty__kicker">Điểm khác biệt Đông Á</p>
+          <h2 id="warranty-heading" class="p-warranty__title">Cam kết bảo hành <em>dài nhất</em> ngành điều hòa xe
+            tải —<br>không phụ tùng "tương đương", không chờ hàng về.</h2>
+          <ul class="p-warranty__list">
+            <li>
+              <span class="p-warranty__list-ic">✓</span>
+              <span class="p-warranty__list-txt"><b>Phụ tùng chính hãng 100%</b> — thay đúng linh kiện Webasto nhập
+                khẩu, không dùng hàng thay thế trôi nổi.</span>
+            </li>
+            <li>
+              <span class="p-warranty__list-ic">⇄</span>
+              <span class="p-warranty__list-txt"><b>1 đổi 1 tức thì</b> — lỗi kỹ thuật trong thời gian bảo hành, đổi
+                máy mới ngay, xe không nằm bãi chờ sửa.</span>
+            </li>
+            <li>
+              <span class="p-warranty__list-ic">🚛</span>
+              <span class="p-warranty__list-txt"><b>Hỗ trợ tận nơi</b> — kỹ thuật Đông Á có mặt tại xưởng, bãi xe,
+                không cần tháo máy gửi đi xa.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="p-warranty__compare">
+          <div class="p-warranty__compare-vs">SO VỚI MẶT BẰNG CHUNG</div>
+          <div class="p-warranty__compare-row p-warranty__compare-row--other"><span>Nơi khác</span><span
+              class="p-warranty__compare-tag">6–12 tháng</span></div>
+          <div class="p-warranty__compare-row p-warranty__compare-row--us"><span>Đông Á</span><span
+              class="p-warranty__compare-tag">18 tháng · 1 đổi 1</span></div>
+        </div>
       </div>
-    </div>
+    </section>
 
     <!-- ============ WHY WEBASTO ============ -->
     <section id="why" class="p-why l-section" aria-labelledby="why-heading">
