@@ -1,480 +1,814 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Đông Á — Điều hòa Webasto chính hãng</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --ink:#12222E;
-    --ink-soft:#3E5666;
-    --steel:#1C4E68;
-    --steel-deep:#0F3244;
-    --cool-bg:#EAF3F6;
-    --cool-bg-2:#DCEBF0;
-    --warm-1:#FDEFE4;
-    --warm-2:#F7D9C6;
-    --red:#C8402A;
-    --red-deep:#A63220;
-    --line:rgba(18,34,46,0.10);
-    --white:#ffffff;
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  body{
-    font-family:'Inter', sans-serif;
-    color:var(--ink);
-    background:var(--white);
-    -webkit-font-smoothing:antialiased;
-  }
-  .mono{font-family:'IBM Plex Mono', monospace;}
-  .display{font-family:'Oswald', sans-serif; text-transform:uppercase;}
-
-  /* ===== Top utility bar ===== */
-  .topbar{
-    background:var(--steel-deep);
-    color:#DDEAF0;
-    font-size:12.5px;
-    padding:9px 40px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    letter-spacing:.2px;
-  }
-  .topbar a{color:#FBD9CE; text-decoration:none; font-weight:600;}
-  .topbar .left{opacity:.9;}
-  .topbar .right{display:flex; gap:18px; align-items:center;}
-
-  /* ===== Nav ===== */
-  nav{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:16px 40px;
-    background:var(--white);
-    border-bottom:1px solid var(--line);
-    position:relative;
-    z-index:20;
-  }
-  .brand{display:flex; align-items:center; gap:12px;}
-  .brand .mark{
-    height:46px; width:auto;
-    object-fit:contain;
-  }
-  .brand .name{font-family:'Oswald'; font-weight:600; font-size:19px; color:var(--ink); letter-spacing:.5px; line-height:1.1;}
-  .brand .tag{font-size:10.5px; color:var(--ink-soft); letter-spacing:.6px; text-transform:uppercase;}
-  .navlinks{display:flex; gap:34px; font-size:14.5px; font-weight:500; color:var(--ink-soft);}
-  .navlinks a{text-decoration:none; color:inherit; transition:color .15s;}
-  .navlinks a:hover{color:var(--red);}
-  .cta-btn{
-    background:var(--red);
-    color:#fff;
-    border:none;
-    padding:12px 22px;
-    border-radius:8px;
-    font-weight:600;
-    font-size:14.5px;
-    cursor:pointer;
-    box-shadow:0 8px 20px -8px rgba(200,64,42,.55);
-    transition:transform .15s, box-shadow .15s;
-  }
-  .cta-btn:hover{transform:translateY(-1px); box-shadow:0 10px 24px -8px rgba(200,64,42,.65);}
-  .cta-outline{
-    background:transparent;
-    border:1.5px solid var(--ink);
-    color:var(--ink);
-    padding:12px 22px;
-    border-radius:8px;
-    font-weight:600;
-    font-size:14.5px;
-    cursor:pointer;
-  }
-
-  /* ===== Hero: heat -> cool split ===== */
-  .hero{
-    position:relative;
-    overflow:hidden;
-    background: linear-gradient(100deg,
-      var(--warm-1) 0%,
-      var(--warm-2) 26%,
-      var(--cool-bg-2) 52%,
-      var(--cool-bg) 100%);
-    padding:64px 40px 30px;
-  }
-  /* gauge seam label marking the heat/cool boundary */
-  .seam-label{
-    position:absolute;
-    top:22px;
-    left:calc(38% - 1px);
-    transform:translateX(-50%);
-    display:flex;
-    gap:26px;
-    z-index:2;
-    font-family:'IBM Plex Mono';
-    font-size:11.5px;
-    font-weight:600;
-    letter-spacing:.5px;
-  }
-  .seam-label .hot{color:#B44A2E;}
-  .seam-label .cold{color:var(--steel);}
-
-  .hero-grid{
-    position:relative;
-    z-index:3;
-    display:grid;
-    grid-template-columns:1.05fr 1fr;
-    gap:24px;
-    align-items:center;
-    max-width:1360px;
-    margin:0 auto;
-  }
-
-  .eyebrow{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background:rgba(255,255,255,.55);
-    border:1px solid rgba(18,34,46,.12);
-    padding:6px 14px 6px 10px;
-    border-radius:100px;
-    font-size:12.5px;
-    font-weight:600;
-    color:var(--red-deep);
-    letter-spacing:.4px;
-    margin-bottom:22px;
-  }
-  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--red);}
-
-  h1{
-    font-family:'Oswald';
-    font-weight:700;
-    font-size:clamp(38px, 4.6vw, 62px);
-    line-height:1.02;
-    letter-spacing:.5px;
-    color:var(--ink);
-  }
-  h1 .accent{color:var(--red);}
-  h1 .fade{
-    color:transparent;
-    -webkit-text-stroke:1.4px var(--ink-soft);
-  }
-
-  .sub{
-    margin-top:22px;
-    font-size:16.5px;
-    line-height:1.65;
-    color:var(--ink-soft);
-    max-width:490px;
-  }
-
-  .badges{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:26px;
-  }
-  .badge{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    background:var(--white);
-    border:1px solid var(--line);
-    padding:8px 14px;
-    border-radius:8px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--ink);
-    box-shadow:0 2px 6px rgba(18,34,46,.04);
-  }
-  .badge .check{
-    width:16px; height:16px;
-    border-radius:50%;
-    background:var(--steel);
-    color:#fff;
-    font-size:10px;
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0;
-  }
-
-  .cta-row{display:flex; gap:12px; margin-top:30px;}
-
-  .stats{
-    display:flex;
-    gap:36px;
-    margin-top:42px;
-    padding-top:26px;
-    border-top:1px solid var(--line);
-    max-width:520px;
-  }
-  .stat .num{font-family:'Oswald'; font-weight:600; font-size:24px; color:var(--steel-deep);}
-  .stat .label{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
-
-  /* ===== Product staging (right column) ===== */
-  .stage{
-    position:relative;
-    min-height:560px;
-  }
-  .gauge-badge{
-    position:absolute;
-    top:14px;
-    right:22px;
-    background:var(--white);
-    border-radius:14px;
-    padding:14px 20px;
-    box-shadow:0 16px 36px -14px rgba(18,34,46,.28);
-    z-index:5;
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    border:1px solid var(--line);
-  }
-  .gauge-badge .temp{
-    font-family:'Oswald'; font-weight:700; font-size:30px; color:var(--steel-deep); line-height:1;
-  }
-  .gauge-badge .sub2{font-size:11px; color:var(--ink-soft); margin-top:5px; max-width:150px;}
-  .gauge-badge .sub2 b{color:var(--red-deep);}
-
-  .stage-main{
-    position:relative;
-    background:var(--white);
-    border-radius:22px;
-    border:1px solid var(--line);
-    box-shadow:0 30px 60px -24px rgba(18,34,46,.20);
-    padding:40px 30px 26px;
-    margin-top:56px;
-  }
-  .stage-main::before{
-    content:"";
-    position:absolute;
-    inset:16px;
-    border-radius:16px;
-    background:radial-gradient(ellipse at 50% 30%, rgba(28,78,104,.06), transparent 65%);
-    z-index:0;
-  }
-  .stage-main img{
-    position:relative;
-    z-index:1;
-    width:100%;
-    display:block;
-    filter:drop-shadow(0 24px 20px rgba(18,34,46,.18));
-  }
-  .stage-caption{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:18px;
-    padding-top:14px;
-    border-top:1px solid var(--line);
-  }
-  .stage-caption .name{font-weight:700; font-size:14.5px; color:var(--ink);}
-  .stage-caption .desc{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
-  .stage-caption .arrow{
-    width:34px; height:34px;
-    border-radius:50%;
-    background:var(--cool-bg);
-    display:flex; align-items:center; justify-content:center;
-    color:var(--steel-deep);
-    flex-shrink:0;
-  }
-
-  .thumbs{
-    display:flex;
-    gap:14px;
-    margin-top:14px;
-  }
-  .thumb{
-    flex:1;
-    background:var(--white);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:16px 14px 12px;
-    box-shadow:0 10px 24px -14px rgba(18,34,46,.18);
-    text-align:center;
-    transition:transform .15s;
-  }
-  .thumb:hover{transform:translateY(-3px);}
-  .thumb img{width:100%; height:64px; object-fit:contain; margin-bottom:8px;}
-  .thumb .t{font-size:12px; font-weight:700; color:var(--ink);}
-  .thumb .t2{font-size:10.5px; color:var(--ink-soft); margin-top:1px;}
-
-  /* ===== brand strip ===== */
-  .brandstrip{
-    background:var(--cool-bg);
-    padding:22px 40px 26px;
-    border-top:1px solid var(--line);
-  }
-  .brandstrip-inner{
-    max-width:1360px; margin:0 auto;
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;
-  }
-  .brandstrip .note{font-size:13px; color:var(--ink-soft); max-width:340px; line-height:1.5;}
-  .brandstrip .logos{display:flex; gap:30px; flex-wrap:wrap;}
-  .brandstrip .logos span{
-    font-family:'Oswald'; font-weight:500; font-size:14px; color:var(--ink-soft); letter-spacing:.5px;
-  }
-
-  /* ===== Trust / Warranty highlight section (night highway theme) ===== */
-  .trust{
-    position:relative;
-    overflow:hidden;
-    background:
-      radial-gradient(1100px 460px at 82% -10%, rgba(255,255,255,.05), transparent 60%),
-      linear-gradient(180deg, #0A1A24 0%, #0F2836 42%, #163C50 100%);
-    padding:78px 40px 0;
-  }
-  /* converging road lines toward horizon */
-  .trust .road{
-    position:absolute;
-    left:50%;
-    bottom:0;
-    width:2600px;
-    height:340px;
-    transform:translateX(-50%);
-    z-index:0;
-    opacity:.55;
-    background-image:
-      repeating-linear-gradient(90deg, transparent 0 64px, rgba(255,255,255,.16) 64px 68px);
-    clip-path:polygon(46% 0%, 54% 0%, 100% 100%, 0% 100%);
-  }
-  .trust .streak{
-    position:absolute;
-    height:2px;
-    border-radius:2px;
-    background:linear-gradient(90deg, transparent, rgba(251,167,140,.85), transparent);
-    filter:blur(.4px);
-    z-index:1;
-  }
-  .trust .glow{
-    position:absolute;
-    width:640px; height:640px;
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(200,64,42,.16), transparent 70%);
-    top:-220px; right:-160px;
-    z-index:0;
-  }
-
-  .trust-inner{
-    position:relative;
-    z-index:3;
-    max-width:1200px;
-    margin:0 auto;
-    display:grid;
-    grid-template-columns:auto 1fr auto;
-    gap:44px;
-    align-items:center;
-    padding-bottom:56px;
-  }
-
-  .shield{
-    position:relative;
-    width:172px; height:190px;
-    flex-shrink:0;
-  }
-  .shield::before{
-    content:"";
-    position:absolute;
-    top:50%; left:50%;
-    width:230px; height:230px;
-    transform:translate(-50%,-50%);
-    background:radial-gradient(circle, rgba(200,64,42,.45), transparent 68%);
-    z-index:-1;
-  }
-  .shield svg{width:100%; height:100%; display:block;
-    filter:drop-shadow(0 18px 30px rgba(0,0,0,.35));}
-  .shield .num{
-    position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-58%);
-    font-family:'Oswald'; font-weight:700; color:#fff;
-    font-size:46px; line-height:1; text-align:center;
-  }
-  .shield .num small{
-    display:block; font-family:'IBM Plex Mono'; font-size:11px; font-weight:600;
-    letter-spacing:1.5px; color:#FBD9CE; margin-top:6px;
-  }
-
-  .trust-copy .kicker{
-    display:inline-flex; align-items:center; gap:8px;
-    font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; letter-spacing:1px;
-    color:#FBA98C; text-transform:uppercase; margin-bottom:14px;
-  }
-  .trust-copy .kicker::before{content:""; width:22px; height:1.5px; background:#FBA98C; display:inline-block;}
-  .trust-copy h2{
-    font-family:'Oswald'; font-weight:700; color:#fff;
-    font-size:clamp(24px, 2.6vw, 34px); line-height:1.15; letter-spacing:.3px;
-    max-width:640px;
-  }
-  .trust-copy h2 em{font-style:normal; color:#FBA98C;}
-  .trust-list{
-    display:flex; gap:28px; margin-top:22px; flex-wrap:wrap;
-  }
-  .trust-list li{
-    list-style:none;
-    display:flex; gap:10px; align-items:flex-start;
-    max-width:260px;
-  }
-  .trust-list .ic{
-    width:26px; height:26px; border-radius:50%;
-    background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.25);
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0; color:#fff; font-size:13px; margin-top:1px;
-  }
-  .trust-list .txt{font-size:13.5px; color:#CFE0E9; line-height:1.5;}
-  .trust-list .txt b{color:#fff;}
-
-  .trust-compare{
-    text-align:right;
-    flex-shrink:0;
-    background:linear-gradient(160deg, rgba(200,64,42,.16), rgba(255,255,255,.04));
-    border:1px solid rgba(251,167,140,.35);
-    border-radius:16px;
-    padding:20px 22px;
-    box-shadow:0 20px 40px -20px rgba(200,64,42,.5);
-  }
-  .trust-compare .vs{font-size:11.5px; color:#8FAAB8; margin-bottom:12px; letter-spacing:.5px;}
-  .compare-row{
-    display:flex; align-items:center; gap:10px; justify-content:flex-end; margin-bottom:10px;
-  }
-  .compare-row .tag{
-    font-family:'IBM Plex Mono'; font-size:12px; padding:4px 10px; border-radius:6px;
-  }
-  .compare-row.other .tag{background:rgba(255,255,255,.08); color:#9FB4C0;}
-  .compare-row .lbl{font-size:12.5px; color:#9FB4C0;}
-  .compare-row.us{margin-bottom:0; transform:scale(1.08); transform-origin:right center;}
-  .compare-row.us .tag{
-    background:var(--red); color:#fff; font-weight:700;
-    font-size:15px; padding:7px 14px;
-    box-shadow:0 10px 24px -6px rgba(200,64,42,.75), 0 0 0 1px rgba(255,255,255,.15) inset;
-  }
-  .compare-row.us .lbl{color:#fff; font-weight:700; font-size:13.5px;}
-
-  @media (max-width: 900px){
-    .trust-inner{grid-template-columns:1fr; text-align:center; justify-items:center;}
-    .trust-list{justify-content:center;}
-    .trust-compare{text-align:center;}
-    .compare-row{justify-content:center;}
-    .compare-row.us{transform-origin:center;}
-  }
-
-  @media (max-width: 980px){
-    .hero-grid{grid-template-columns:1fr;}
-    .seam-label{display:none;}
-    nav .navlinks{display:none;}
-    .topbar{
-      flex-direction:column;
-      align-items:flex-start;
-      gap:6px;
-      padding:10px 20px;
-      font-size:11px;
-      line-height:1.5;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đông Á — Điều hòa Webasto chính hãng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #12222E;
+      --ink-soft: #3E5666;
+      --steel: #1C4E68;
+      --steel-deep: #0F3244;
+      --cool-bg: #EAF3F6;
+      --cool-bg-2: #DCEBF0;
+      --warm-1: #FDEFE4;
+      --warm-2: #F7D9C6;
+      --red: #C8402A;
+      --red-deep: #A63220;
+      --line: rgba(18, 34, 46, 0.10);
+      --white: #ffffff;
     }
-    .topbar .right{flex-wrap:wrap; gap:4px 14px;}
-    nav, .hero, .brandstrip, .warranty{padding-left:20px; padding-right:20px;}
-    .stats{flex-wrap:wrap; gap:24px;}
-  }
-</style>
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .display {
+      font-family: 'Oswald', sans-serif;
+      text-transform: uppercase;
+    }
+
+    /* ===== Top utility bar ===== */
+    .topbar {
+      background: var(--steel-deep);
+      color: #DDEAF0;
+      font-size: 12.5px;
+      padding: 9px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      letter-spacing: .2px;
+    }
+
+    .topbar a {
+      color: #FBD9CE;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .topbar .left {
+      opacity: .9;
+    }
+
+    .topbar .right {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+
+    /* ===== Nav ===== */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 40px;
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      z-index: 20;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand .mark {
+      height: 46px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .brand .name {
+      font-family: 'Oswald';
+      font-weight: 600;
+      font-size: 19px;
+      color: var(--ink);
+      letter-spacing: .5px;
+      line-height: 1.1;
+    }
+
+    .brand .tag {
+      font-size: 10.5px;
+      color: var(--ink-soft);
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      padding-top: 5px;
+    }
+
+    .navlinks {
+      display: flex;
+      gap: 34px;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--ink-soft);
+    }
+
+    .navlinks a {
+      text-decoration: none;
+      color: inherit;
+      transition: color .15s;
+    }
+
+    .navlinks a:hover {
+      color: var(--red);
+    }
+
+    .cta-btn {
+      background: var(--red);
+      color: #fff;
+      border: none;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14.5px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px -8px rgba(200, 64, 42, .55);
+      transition: transform .15s, box-shadow .15s;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px -8px rgba(200, 64, 42, .65);
+    }
+
+    .cta-outline {
+      background: transparent;
+      border: 1.5px solid var(--ink);
+      color: var(--ink);
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14.5px;
+      cursor: pointer;
+    }
+
+    /* ===== Hero: heat -> cool split ===== */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(100deg,
+          var(--warm-1) 0%,
+          var(--warm-2) 26%,
+          var(--cool-bg-2) 52%,
+          var(--cool-bg) 100%);
+      padding: 64px 40px 30px;
+    }
+
+    /* gauge seam label marking the heat/cool boundary */
+    .seam-label {
+      position: absolute;
+      top: 22px;
+      left: calc(38% - 1px);
+      transform: translateX(-50%);
+      display: flex;
+      gap: 26px;
+      z-index: 2;
+      font-family: 'IBM Plex Mono';
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+
+    .seam-label .hot {
+      color: #B44A2E;
+    }
+
+    .seam-label .cold {
+      color: var(--steel);
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 24px;
+      align-items: center;
+      max-width: 1360px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, .55);
+      border: 1px solid rgba(18, 34, 46, .12);
+      padding: 6px 14px 6px 10px;
+      border-radius: 100px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--red-deep);
+      letter-spacing: .4px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    h1 {
+      font-family: 'Oswald';
+      font-weight: 700;
+      font-size: clamp(38px, 4.6vw, 62px);
+      line-height: 1.02;
+      letter-spacing: .5px;
+      color: var(--ink);
+    }
+
+    h1 .accent {
+      color: var(--red);
+    }
+
+    h1 .fade {
+      color: transparent;
+      -webkit-text-stroke: 1.4px var(--ink-soft);
+    }
+
+    .sub {
+      margin-top: 22px;
+      font-size: 16.5px;
+      line-height: 1.65;
+      color: var(--ink-soft);
+      max-width: 490px;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      box-shadow: 0 2px 6px rgba(18, 34, 46, .04);
+    }
+
+    .badge .check {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--steel);
+      color: #fff;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 36px;
+      margin-top: 42px;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+      max-width: 520px;
+    }
+
+    .stat .num {
+      font-family: 'Oswald';
+      font-weight: 600;
+      font-size: 24px;
+      color: var(--steel-deep);
+    }
+
+    .stat .label {
+      font-size: 12.5px;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
+
+    /* ===== Product staging (right column) ===== */
+    .stage {
+      position: relative;
+      min-height: 560px;
+    }
+
+    .gauge-badge {
+      position: absolute;
+      top: 14px;
+      right: 22px;
+      background: var(--white);
+      border-radius: 14px;
+      padding: 14px 20px;
+      box-shadow: 0 16px 36px -14px rgba(18, 34, 46, .28);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      border: 1px solid var(--line);
+    }
+
+    .gauge-badge .temp {
+      font-family: 'Oswald';
+      font-weight: 700;
+      font-size: 30px;
+      color: var(--steel-deep);
+      line-height: 1;
+    }
+
+    .gauge-badge .sub2 {
+      font-size: 11px;
+      color: var(--ink-soft);
+      margin-top: 5px;
+      max-width: 150px;
+    }
+
+    .gauge-badge .sub2 b {
+      color: var(--red-deep);
+    }
+
+    .stage-main {
+      position: relative;
+      background: var(--white);
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 60px -24px rgba(18, 34, 46, .20);
+      padding: 40px 30px 26px;
+      margin-top: 56px;
+    }
+
+    .stage-main::before {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 16px;
+      background: radial-gradient(ellipse at 50% 30%, rgba(28, 78, 104, .06), transparent 65%);
+      z-index: 0;
+    }
+
+    .stage-main img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      display: block;
+      filter: drop-shadow(0 24px 20px rgba(18, 34, 46, .18));
+    }
+
+    .stage-caption {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .stage-caption .name {
+      font-weight: 700;
+      font-size: 14.5px;
+      color: var(--ink);
+    }
+
+    .stage-caption .desc {
+      font-size: 12.5px;
+      color: var(--ink-soft);
+      margin-top: 2px;
+    }
+
+    .stage-caption .arrow {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--cool-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--steel-deep);
+      flex-shrink: 0;
+    }
+
+    .thumbs {
+      display: flex;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .thumb {
+      flex: 1;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 14px 12px;
+      box-shadow: 0 10px 24px -14px rgba(18, 34, 46, .18);
+      text-align: center;
+      transition: transform .15s;
+    }
+
+    .thumb:hover {
+      transform: translateY(-3px);
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 64px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+
+    .thumb .t {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .thumb .t2 {
+      font-size: 10.5px;
+      color: var(--ink-soft);
+      margin-top: 1px;
+    }
+
+    /* ===== brand strip ===== */
+    .brandstrip {
+      background: var(--cool-bg);
+      padding: 22px 40px 26px;
+      border-top: 1px solid var(--line);
+    }
+
+    .brandstrip-inner {
+      max-width: 1360px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brandstrip .note {
+      font-size: 13px;
+      color: var(--ink-soft);
+      max-width: 340px;
+      line-height: 1.5;
+    }
+
+    .brandstrip .logos {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .brandstrip .logos span {
+      font-family: 'Oswald';
+      font-weight: 500;
+      font-size: 14px;
+      color: var(--ink-soft);
+      letter-spacing: .5px;
+    }
+
+    /* ===== Trust / Warranty highlight section (night highway theme) ===== */
+    .trust {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(1100px 460px at 82% -10%, rgba(255, 255, 255, .05), transparent 60%),
+        linear-gradient(180deg, #0A1A24 0%, #0F2836 42%, #163C50 100%);
+      padding: 78px 40px 0;
+    }
+
+    /* converging road lines toward horizon */
+    .trust .road {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 2600px;
+      height: 340px;
+      transform: translateX(-50%);
+      z-index: 0;
+      opacity: .55;
+      background-image:
+        repeating-linear-gradient(90deg, transparent 0 64px, rgba(255, 255, 255, .16) 64px 68px);
+      clip-path: polygon(46% 0%, 54% 0%, 100% 100%, 0% 100%);
+    }
+
+    .trust .streak {
+      position: absolute;
+      height: 2px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, transparent, rgba(251, 167, 140, .85), transparent);
+      filter: blur(.4px);
+      z-index: 1;
+    }
+
+    .trust .glow {
+      position: absolute;
+      width: 640px;
+      height: 640px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(200, 64, 42, .16), transparent 70%);
+      top: -220px;
+      right: -160px;
+      z-index: 0;
+    }
+
+    .trust-inner {
+      position: relative;
+      z-index: 3;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 44px;
+      align-items: center;
+      padding-bottom: 56px;
+    }
+
+    .shield {
+      position: relative;
+      width: 172px;
+      height: 190px;
+      flex-shrink: 0;
+    }
+
+    .shield::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 230px;
+      height: 230px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(200, 64, 42, .45), transparent 68%);
+      z-index: -1;
+    }
+
+    .shield svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .35));
+    }
+
+    .shield .num {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -58%);
+      font-family: 'Oswald';
+      font-weight: 700;
+      color: #fff;
+      font-size: 46px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .shield .num small {
+      display: block;
+      font-family: 'IBM Plex Mono';
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: #FBD9CE;
+      margin-top: 6px;
+    }
+
+    .trust-copy .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'IBM Plex Mono';
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: #FBA98C;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .trust-copy .kicker::before {
+      content: "";
+      width: 22px;
+      height: 1.5px;
+      background: #FBA98C;
+      display: inline-block;
+    }
+
+    .trust-copy h2 {
+      font-family: 'Oswald';
+      font-weight: 700;
+      color: #fff;
+      font-size: clamp(24px, 2.6vw, 34px);
+      line-height: 1.15;
+      letter-spacing: .3px;
+      max-width: 640px;
+    }
+
+    .trust-copy h2 em {
+      font-style: normal;
+      color: #FBA98C;
+    }
+
+    .trust-list {
+      display: flex;
+      gap: 28px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .trust-list li {
+      list-style: none;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      max-width: 260px;
+    }
+
+    .trust-list .ic {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fff;
+      font-size: 13px;
+      margin-top: 1px;
+    }
+
+    .trust-list .txt {
+      font-size: 13.5px;
+      color: #CFE0E9;
+      line-height: 1.5;
+    }
+
+    .trust-list .txt b {
+      color: #fff;
+    }
+
+    .trust-compare {
+      text-align: right;
+      flex-shrink: 0;
+      background: linear-gradient(160deg, rgba(200, 64, 42, .16), rgba(255, 255, 255, .04));
+      border: 1px solid rgba(251, 167, 140, .35);
+      border-radius: 16px;
+      padding: 20px 22px;
+      box-shadow: 0 20px 40px -20px rgba(200, 64, 42, .5);
+    }
+
+    .trust-compare .vs {
+      font-size: 11.5px;
+      color: #8FAAB8;
+      margin-bottom: 12px;
+      letter-spacing: .5px;
+    }
+
+    .compare-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .compare-row .tag {
+      font-family: 'IBM Plex Mono';
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .compare-row.other .tag {
+      background: rgba(255, 255, 255, .08);
+      color: #9FB4C0;
+    }
+
+    .compare-row .lbl {
+      font-size: 12.5px;
+      color: #9FB4C0;
+    }
+
+    .compare-row.us {
+      margin-bottom: 0;
+      transform: scale(1.08);
+      transform-origin: right center;
+    }
+
+    .compare-row.us .tag {
+      background: var(--red);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 7px 14px;
+      box-shadow: 0 10px 24px -6px rgba(200, 64, 42, .75), 0 0 0 1px rgba(255, 255, 255, .15) inset;
+    }
+
+    .compare-row.us .lbl {
+      color: #fff;
+      font-weight: 700;
+      font-size: 13.5px;
+    }
+
+    @media (max-width: 900px) {
+      .trust-inner {
+        grid-template-columns: 1fr;
+        text-align: center;
+        justify-items: center;
+      }
+
+      .trust-list {
+        justify-content: center;
+      }
+
+      .trust-compare {
+        text-align: center;
+      }
+
+      .compare-row {
+        justify-content: center;
+      }
+
+      .compare-row.us {
+        transform-origin: center;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .seam-label {
+        display: none;
+      }
+
+      nav .navlinks {
+        display: none;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 20px;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      .topbar .right {
+        flex-wrap: wrap;
+        gap: 4px 14px;
+      }
+
+      nav,
+      .hero,
+      .brandstrip,
+      .warranty {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+
+      .stats {
+        flex-wrap: wrap;
+        gap: 24px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="topbar">
@@ -490,7 +824,7 @@
       <img class="mark" src="../assets/img/logo.jpg" alt="Đông Á">
       <div>
         <div class="name">ĐÔNG Á</div>
-        <div class="tag">Điều hòa Webasto chính hãng</div>
+        <div class="tag">Điều hòa Webasto <br class="hidden-pc"> chính hãng</div>
       </div>
     </div>
     <div class="navlinks">
@@ -513,7 +847,8 @@
       <div class="hero-copy">
         <div class="eyebrow"><span class="dot"></span> WEBASTO R25 &amp; R20 · ĐIỀU HÒA ĐỖ XE</div>
         <h1>ĐẲNG CẤP <span class="accent">ĐỨC</span><br>CHO <span class="fade">CABIN</span> XE TẢI VIỆT</h1>
-        <p class="sub">Điều hòa không cần nổ máy. Làm lạnh sâu cực nhanh ngay cả khi xe đỗ dưới nắng 40°C — cho tài xế đường dài một giấc ngủ thật, tiết kiệm dầu, giữ độ cơ.</p>
+        <p class="sub">Điều hòa không cần nổ máy. Làm lạnh sâu cực nhanh ngay cả khi xe đỗ dưới nắng 40°C — cho tài xế
+          đường dài một giấc ngủ thật, tiết kiệm dầu, giữ độ cơ.</p>
 
         <div class="badges">
           <div class="badge"><span class="check">✓</span> Chính hãng Đức 100%</div>
@@ -601,13 +936,14 @@
     <div class="trust-inner">
       <div class="shield">
         <svg viewBox="0 0 172 190" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M86 4 L166 30 V88 C166 138 132 168 86 186 C40 168 6 138 6 88 V30 Z"
-                fill="url(#g1)" stroke="#FBA98C" stroke-width="2"/>
-          <path d="M50 96 L74 120 L124 66" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".25"/>
+          <path d="M86 4 L166 30 V88 C166 138 132 168 86 186 C40 168 6 138 6 88 V30 Z" fill="url(#g1)" stroke="#FBA98C"
+            stroke-width="2" />
+          <path d="M50 96 L74 120 L124 66" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"
+            opacity=".25" />
           <defs>
             <linearGradient id="g1" x1="6" y1="4" x2="166" y2="186" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#1C4E68"/>
-              <stop offset="1" stop-color="#0A1A24"/>
+              <stop stop-color="#1C4E68" />
+              <stop offset="1" stop-color="#0A1A24" />
             </linearGradient>
           </defs>
         </svg>
@@ -616,19 +952,23 @@
 
       <div class="trust-copy">
         <div class="kicker">Điểm khác biệt Đông Á</div>
-        <h2>Cam kết bảo hành <em>dài nhất</em> ngành điều hòa xe tải —<br>không phụ tùng "tương đương", không chờ hàng về.</h2>
+        <h2>Cam kết bảo hành <em>dài nhất</em> ngành điều hòa xe tải —<br>không phụ tùng "tương đương", không chờ hàng
+          về.</h2>
         <ul class="trust-list">
           <li>
             <span class="ic">✓</span>
-            <span class="txt"><b>Phụ tùng chính hãng 100%</b> — thay đúng linh kiện Webasto nhập khẩu, không dùng hàng thay thế trôi nổi.</span>
+            <span class="txt"><b>Phụ tùng chính hãng 100%</b> — thay đúng linh kiện Webasto nhập khẩu, không dùng hàng
+              thay thế trôi nổi.</span>
           </li>
           <li>
             <span class="ic">⇄</span>
-            <span class="txt"><b>1 đổi 1 tức thì</b> — lỗi kỹ thuật trong thời gian bảo hành, đổi máy mới ngay, xe không nằm bãi chờ sửa.</span>
+            <span class="txt"><b>1 đổi 1 tức thì</b> — lỗi kỹ thuật trong thời gian bảo hành, đổi máy mới ngay, xe không
+              nằm bãi chờ sửa.</span>
           </li>
           <li>
             <span class="ic">🚛</span>
-            <span class="txt"><b>Hỗ trợ tận nơi</b> — kỹ thuật Đông Á có mặt tại xưởng, bãi xe, không cần tháo máy gửi đi xa.</span>
+            <span class="txt"><b>Hỗ trợ tận nơi</b> — kỹ thuật Đông Á có mặt tại xưởng, bãi xe, không cần tháo máy gửi
+              đi xa.</span>
           </li>
         </ul>
       </div>
@@ -642,4 +982,5 @@
   </section>
 
 </body>
+
 </html>

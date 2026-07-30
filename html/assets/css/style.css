@@ -28,6 +28,13 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Utilities */
+@media (min-width: 901px) {
+  .hidden-pc {
+    display: none;
+  }
+}
+
 body,
 h1,
 h2,
