@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Bash(node extract.js)",
+      "Bash(/c/Users/Admin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1.2-full_build/bin/ffmpeg -i 'C:\\\\Users\\\\Admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--project-donga-landing\\\\1e1b5f0e-26e7-406c-ba84-8541bdee0a60\\\\scratchpad\\\\voiceref\\\\ref_audio.wav' -af silencedetect=noise=-30dB:d=0.3 -f null -)"
+    ]
+  }
+}
