@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kế hoạch sản xuất 2 video tổng quan FLYER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F7F2;
+    --surface:#FFFFFF;
+    --ink:#152B1E;
+    --ink-soft:#516355;
+    --ink-faint:#8A9A8C;
+    --line:#DCE4D8;
+    --teal:#0F6E56;
+    --teal-ink:#0A4A3A;
+    --teal-soft:#E4F1EC;
+    --coral:#C1502E;
+    --coral-ink:#8A3A20;
+    --coral-soft:#FBEAE3;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Be Vietnam Pro',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:920px;margin:0 auto;padding:64px 28px 96px;}
+
+  .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal-ink);
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--teal);display:inline-block;}
+
+  h1{
+    font-size:clamp(28px,4.2vw,42px);
+    font-weight:800;
+    line-height:1.15;
+    margin:18px 0 14px;
+    letter-spacing:-.01em;
+  }
+  .lede{
+    font-size:17px;
+    color:var(--ink-soft);
+    max-width:620px;
+    line-height:1.65;
+    margin:0;
+  }
+
+  section{margin-top:56px;}
+  h2{
+    font-size:22px;
+    font-weight:800;
+    margin:0 0 6px;
+  }
+  .section-note{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    max-width:640px;
+    line-height:1.6;
+    margin:0 0 24px;
+  }
+
+  /* Before / after */
+  .compare{display:flex;gap:16px;flex-wrap:wrap;}
+  .compare .card{
+    flex:1 1 260px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px;
+  }
+  .compare .card.after{border-color:var(--teal);background:var(--teal-soft);}
+  .card-tag{
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .card.after .card-tag{color:var(--teal-ink);}
+  .card p{font-size:14.5px;line-height:1.6;margin:8px 0 0;color:var(--ink-soft);}
+  .card.after p{color:var(--teal-ink);}
+
+  /* Reuse map */
+  .map-wrap{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:8px;
+    overflow:hidden;
+  }
+  .map-wrap svg{display:block;width:100%;height:auto;}
+
+  /* Video cards */
+  .video-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 28px 24px;
+  }
+  .video-card + .video-card{margin-top:22px;}
+  .video-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .video-title{font-size:19px;font-weight:800;margin:0;}
+  .video-meta{
+    display:flex;gap:18px;flex-wrap:wrap;margin-top:6px;
+  }
+  .video-meta span{
+    font-size:12.5px;color:var(--ink-soft);
+  }
+  .video-meta b{color:var(--ink);font-weight:600;}
+  .duration-chip{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    padding:5px 12px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .video-card.a .duration-chip{background:var(--teal-soft);color:var(--teal-ink);}
+  .video-card.b .duration-chip{background:var(--coral-soft);color:var(--coral-ink);}
+
+  .timeline{margin-top:22px;position:relative;padding-left:2px;}
+  .timeline::before{
+    content:"";
+    position:absolute;left:57px;top:6px;bottom:6px;width:1px;
+    background:var(--line);
+  }
+  .step{display:flex;gap:16px;padding:12px 0;position:relative;}
+  .step .tc{
+    font-family:'Space Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-faint);
+    width:57px;
+    flex:0 0 57px;
+    padding-top:2px;
+    text-align:right;
+    padding-right:16px;
+  }
+  .step .dot{
+    position:absolute;left:53px;top:16px;width:9px;height:9px;border-radius:50%;
+    border:2px solid var(--surface);
+  }
+  .video-card.a .step .dot{background:var(--teal);}
+  .video-card.b .step .dot{background:var(--coral);}
+  .step .body{padding-left:20px;}
+  .step .body h3{font-size:14.5px;font-weight:600;margin:0 0 3px;}
+  .step .body p{font-size:13.5px;color:var(--ink-soft);line-height:1.55;margin:0;}
+
+  /* Implementation footer */
+  .impl{
+    background:var(--ink);
+    color:#EAF1EA;
+    border-radius:16px;
+    padding:26px 28px;
+  }
+  .impl h2{color:#fff;}
+  .impl ul{margin:14px 0 0;padding-left:18px;}
+  .impl li{font-size:14.5px;line-height:1.7;color:#CFE0D3;margin-bottom:6px;}
+  .impl li b{color:#fff;font-weight:600;}
+
+  @media (max-width:600px){
+    .step .tc{width:44px;flex:0 0 44px;font-size:10.5px;padding-right:10px;}
+    .timeline::before{left:44px;}
+    .step .dot{left:40px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">Kế hoạch sản xuất nội dung</div>
+    <h1>Hai video tổng quan, dùng chung cho toàn hệ thống</h1>
+    <p class="lede">Thay vì diễn giải lại phần "FLYER LMS-R là gì" ở mỗi điểm chạm (demo, training, rồi trung tâm lại tự giải thích cho phụ huynh), chuẩn hoá thành 2 video ngắn — mỗi video kể đúng một câu chuyện, dùng lại ở nhiều nơi.</p>
+  </header>
+
+  <section>
+    <h2>Vấn đề hiện tại</h2>
+    <p class="section-note">Phần giới thiệu tổng quan FT (Flyer Teacher) và FE (Flyer Exam) đang bị lặp lại 3 lần, mỗi lần một kiểu diễn đạt khác nhau.</p>
+    <div class="compare">
+      <div class="card before">
+        <div class="card-tag">Trước</div>
+        <p>Sales tự kể ở demo → CS kể lại ở training → GV lại tự diễn giải cho phụ huynh. Ba phiên bản, dễ lệch thông tin, tốn thời gian mỗi buổi.</p>
+      </div>
+      <div class="card after">
+        <div class="card-tag">Sau</div>
+        <p>Một Video A và một Video B, dùng lại đúng lúc cần. Người trình bày chỉ cần chiếu, không cần soạn lại lời mỗi lần.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Sơ đồ tái sử dụng</h2>
+    <p class="section-note">Hai video là nguồn nội dung dùng chung, cắm vào ba điểm chạm khác nhau trong quy trình bán &amp; triển khai.</p>
+    <div class="map-wrap">
+      <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#9CB0A0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <path d="M210 104 L210 200 L140 200 L140 260" fill="none" stroke="#9CB0A0" stroke-width="1.4" marker-end="url(#ah)"/>
+        <path d="M210 104 L210 215 L370 215 L370 260" fill="none" stroke="#9CB0A0" stroke-width="1.4" marker-end="url(#ah)"/>
+        <path d="M590 104 L590 225 L430 225 L430 260" fill="none" stroke="#9CB0A0" stroke-width="1.4" marker-end="url(#ah)"/>
+        <path d="M590 104 L590 235 L660 235 L660 260" fill="none" stroke="#9CB0A0" stroke-width="1.4" marker-end="url(#ah)"/>
+
+        <rect x="60" y="40" width="300" height="64" rx="10" fill="#E4F1EC" stroke="#0F6E56" stroke-width="1"/>
+        <text x="210" y="60" text-anchor="middle" font-family="Space Mono, monospace" font-size="11" fill="#0A4A3A">VIDEO A</text>
+        <text x="210" y="80" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="14" font-weight="600" fill="#0A4A3A">Tổng quan phía trung tâm</text>
+        <text x="210" y="97" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="11.5" fill="#3E6B5B">Dùng ở Demo &amp; Training</text>
+
+        <rect x="440" y="40" width="300" height="64" rx="10" fill="#FBEAE3" stroke="#C1502E" stroke-width="1"/>
+        <text x="590" y="60" text-anchor="middle" font-family="Space Mono, monospace" font-size="11" fill="#8A3A20">VIDEO B</text>
+        <text x="590" y="80" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="14" font-weight="600" fill="#8A3A20">Tổng quan phía học sinh</text>
+        <text x="590" y="97" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="11.5" fill="#A85436">Dùng ở Training &amp; gửi PH</text>
+
+        <rect x="40" y="260" width="200" height="56" rx="10" fill="#FFFFFF" stroke="#DCE4D8" stroke-width="1"/>
+        <text x="140" y="292" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="13.5" font-weight="600" fill="#152B1E">Demo cho TT/GV</text>
+
+        <rect x="300" y="260" width="200" height="56" rx="10" fill="#FFFFFF" stroke="#DCE4D8" stroke-width="1"/>
+        <text x="400" y="292" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="13.5" font-weight="600" fill="#152B1E">Training LMS</text>
+
+        <rect x="560" y="260" width="200" height="56" rx="10" fill="#FFFFFF" stroke="#DCE4D8" stroke-width="1"/>
+        <text x="660" y="292" text-anchor="middle" font-family="Be Vietnam Pro, sans-serif" font-size="13.5" font-weight="600" fill="#152B1E">Giới thiệu PH/HS</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>Storyboard từng video</h2>
+    <p class="section-note">Mỗi video kể một câu chuyện duy nhất, đủ ngắn để xem trước khi vào phần thực hành hoặc gửi thẳng cho phụ huynh.</p>
+
+    <div class="video-card a">
+      <div class="video-head">
+        <div>
+          <p class="video-title">Video A — Tổng quan phía Trung tâm / Giáo viên</p>
+          <div class="video-meta">
+            <span>Đối tượng: <b>Trung tâm, GV</b></span>
+            <span>Dùng ở: <b>Demo, mở đầu Training</b></span>
+          </div>
+        </div>
+        <span class="duration-chip">00:00 — 02:30</span>
+      </div>
+      <div class="timeline">
+        <div class="step"><span class="tc">00:00</span><span class="dot"></span><div class="body">
+          <h3>Mở đầu</h3><p>FLYER LMS-R là gì — một câu định vị: giải pháp giao bài, theo dõi, đánh giá tiếng Anh.</p>
+        </div></div>
+        <div class="step"><span class="tc">00:20</span><span class="dot"></span><div class="body">
+          <h3>Cấu trúc sản phẩm</h3><p>Hợp phần nội dung (kho đề, Bingo AI, Phòng thi ảo) và hợp phần quản trị (Flyer Teacher).</p>
+        </div></div>
+        <div class="step"><span class="tc">01:00</span><span class="dot"></span><div class="body">
+          <h3>Mô hình kiềng ba chân</h3><p>Trung tâm ↔ Phụ huynh ↔ Học sinh — vai trò của GV trong toàn hệ thống.</p>
+        </div></div>
+        <div class="step"><span class="tc">01:40</span><span class="dot"></span><div class="body">
+          <h3>Lợi ích bằng số liệu</h3><p>Tiết kiệm thời gian chấm bài, tiết kiệm chi phí vận hành cho trung tâm.</p>
+        </div></div>
+        <div class="step"><span class="tc">02:10</span><span class="dot"></span><div class="body">
+          <h3>Chuyển tiếp</h3><p>"Đây là nền tảng — phần thực hành cụ thể sẽ theo hướng dẫn training / help center."</p>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="video-card b">
+      <div class="video-head">
+        <div>
+          <p class="video-title">Video B — Tổng quan phía Học sinh nhận sản phẩm từ trung tâm</p>
+          <div class="video-meta">
+            <span>Đối tượng: <b>Phụ huynh, học sinh</b></span>
+            <span>Dùng ở: <b>Cuối Training, gửi PH</b></span>
+          </div>
+        </div>
+        <span class="duration-chip">00:00 — 01:50</span>
+      </div>
+      <div class="timeline">
+        <div class="step"><span class="tc">00:00</span><span class="dot"></span><div class="body">
+          <h3>Mở đầu</h3><p>Con sẽ luyện tiếng Anh trên Flyer Exam như thế nào.</p>
+        </div></div>
+        <div class="step"><span class="tc">00:15</span><span class="dot"></span><div class="body">
+          <h3>Học sinh sẽ làm gì</h3><p>Bài mô phỏng đề thi, luyện tập ngắn, thách đấu cùng bạn bè.</p>
+        </div></div>
+        <div class="step"><span class="tc">00:50</span><span class="dot"></span><div class="body">
+          <h3>Nhận tài khoản</h3><p>Link/domain riêng từ trung tâm, đăng ký bằng số điện thoại + OTP.</p>
+        </div></div>
+        <div class="step"><span class="tc">01:15</span><span class="dot"></span><div class="body">
+          <h3>App phụ huynh</h3><p>Theo dõi kết quả của con, không cần thao tác kỹ thuật.</p>
+        </div></div>
+        <div class="step"><span class="tc">01:40</span><span class="dot"></span><div class="body">
+          <h3>Kết</h3><p>"Trung tâm sẽ gửi thêm hướng dẫn nếu phụ huynh cần hỗ trợ."</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="impl">
+      <h2>Triển khai</h2>
+      <ul>
+        <li><b>Help center:</b> nhúng đúng video vào bài viết liên quan, thay cho đoạn mô tả chung.</li>
+        <li><b>Demo &amp; Training:</b> chiếu Video A làm phần mở đầu, người trình bày đi thẳng vào phần riêng của buổi đó.</li>
+        <li><b>Gửi phụ huynh:</b> GV gửi link Video B qua Zalo/nhóm lớp kèm link đăng ký tài khoản — không cần tự diễn giải lại.</li>
+      </ul>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
