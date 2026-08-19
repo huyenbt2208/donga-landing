@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="vi"><head>
+    <script>
+      (function() {
+        // Capture host references before any artifact code runs: Window.parent
+        // is [Replaceable] (a top-level `var parent` in artifact code would
+        // replace the accessor with a data property), and a top-level
+        // `const crypto` would shadow the global — either would otherwise
+        // silently break the bridge for artifacts that worked before.
+        const realParent = window.parent;
+        const cryptoObj = window.crypto;
+        // html-to-image is only used by takeScreenshot: fetched on first use, not as a
+        // parser-blocking tag. Native fetch, captured before the proxy override below.
+        const realFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+        const HTML_TO_IMAGE_SRC = "https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js";
+        const HTML_TO_IMAGE_INTEGRITY = "sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==";
+        let htmlToImageLoad = null;
+        const loadHtmlToImage = () => {
+          if (!htmlToImageLoad) {
+            htmlToImageLoad = (realFetch
+              ? realFetch(HTML_TO_IMAGE_SRC, { integrity: HTML_TO_IMAGE_INTEGRITY, credentials: 'omit', referrerPolicy: 'no-referrer' })
+              : Promise.reject(new Error('fetch unavailable'))
+            )
+              .then((res) => {
+                if (!res.ok) throw new Error('html-to-image failed to load (' + res.status + ')');
+                return res.text();
+              })
+              .then((source) => {
+                // UMD bundle: hide the artifact's AMD/CommonJS globals so it takes the
+                // window-global branch; inline script text runs synchronously on insert.
+                const hidden = ['define', 'module', 'exports'].map((k) => {
+                  const entry = { k, own: Object.prototype.hasOwnProperty.call(window, k), v: window[k] };
+                  try { window[k] = undefined; } catch (e) {}
+                  return entry;
+                });
+                try {
+                  const el = document.createElement('script');
+                  el.text = source;
+                  (document.head || document.documentElement).appendChild(el);
+                } finally {
+                  hidden.forEach(({ k, own, v }) => {
+                    try { if (own) { window[k] = v; } else { delete window[k]; } } catch (e) {}
+                  });
+                }
+                if (!window.htmlToImage) throw new Error('html-to-image unavailable after load');
+                return window.htmlToImage;
+              });
+            // A failed load may be transient; let the next screenshot retry.
+            htmlToImageLoad.catch(() => { htmlToImageLoad = null; });
+          }
+          return htmlToImageLoad;
+        };
+        // crypto.randomUUID exists only in Secure Contexts; fall back to a
+        // unique non-crypto id elsewhere (http://LAN-IP dev flows) —
+        // uniqueness is what the bridge needs, unpredictability is
+        // defense-in-depth on top of the source guards.
+        const newRequestId =
+          cryptoObj && typeof cryptoObj.randomUUID === "function"
+            ? function () { return cryptoObj.randomUUID(); }
+            : function () { return Date.now() + "-" + Math.random(); };
+        const originalConsole = window.console;
+        window.console = {
+          log: (...args) => {
+            originalConsole.log(...args);
+            realParent.postMessage({ type: 'console', message: args.join(' ') }, '*');
+          },
+          error: (...args) => {
+            originalConsole.error(...args);
+            realParent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
+          },
+          warn: (...args) => {
+            originalConsole.warn(...args);
+            realParent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
+          }
+        };
+
+        // Bridge request ids are crypto-random (not sequential) so they
+        // cannot be predicted by other frames in the tab.
+        let callbacksMap = new Map();
+        let streamControllers = new Map();
+        
+        window.claude = {
+          complete: (prompt) => {
+            return new Promise((resolve, reject) => {
+              const id = newRequestId();
+              callbacksMap.set(id, { resolve, reject });
+              realParent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
+            });
+          }
+        };
+
+        window.storage = {
+          get: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = newRequestId();
+              callbacksMap.set(id, { resolve, reject });
+              realParent.postMessage({ type: 'storageGet', id, key, shared }, '*');
+            });
+          },
+          set: (key, value, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = newRequestId();
+              callbacksMap.set(id, { resolve, reject });
+              realParent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
+            });
+          },
+          delete: (key, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = newRequestId();
+              callbacksMap.set(id, { resolve, reject });
+              realParent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
+            });
+          },
+          list: (prefix, shared = false) => {
+            return new Promise((resolve, reject) => {
+              const id = newRequestId();
+              callbacksMap.set(id, { resolve, reject });
+              realParent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
+            });
+          }
+        };
+
+        let pendingBlobs = new Map();
+        URL.createObjectURL = (blob) => {
+          // Store the blob and create an ID and URL for it
+          const blobId = `blob-${Date.now()}-${Math.random()}`;
+          pendingBlobs.set(blobId, blob);
+          return `blob-request://${blobId}`;
+        };
+
+        URL.revokeObjectURL = (url) => {
+          // Remove the blob from our store
+          const blobId = url.replace("blob-request://", "");
+          pendingBlobs.delete(blobId);
+        };
+
+        const getBlobFromURL = (url) => {
+          const blobId = url.replace("blob-request://", "");
+          return pendingBlobs.get(blobId);
+        };
+
+        // Override global fetch with streaming support
+        window.fetch = (url, init = {}) => {
+          return new Promise((resolve, reject) => {
+            const id = newRequestId();
+            const channelId = `fetch-${id}-${Date.now()}`;
+            
+            callbacksMap.set(id, { 
+              resolve: (response) => {
+                // Null-body statuses: Response(stream, {status: 204}) throws
+                // per the Fetch spec, which would escape this resolver and
+                // hang the artifact's await forever.
+                if (response.status === 204 || response.status === 205 || response.status === 304) {
+                  try {
+                    resolve(new Response(null, {
+                      status: response.status,
+                      statusText: response.statusText,
+                      headers: response.headers
+                    }));
+                  } catch (err) {
+                    // Invalid statusText/header bytes can throw here too.
+                    reject(new TypeError(
+                      'Bridge fetch: unconstructable response (status ' + response.status + ')'
+                    ));
+                  }
+                  return;
+                }
+                // Create a ReadableStream for the response body
+                const stream = new ReadableStream({
+                  start(controller) {
+                    streamControllers.set(channelId, controller);
+                  },
+                  cancel() {
+                    streamControllers.delete(channelId);
+                  }
+                });
+                
+                // Create and return the Response with the stream. Response()
+                // requires status in [200, 599]; an opaque/no-cors fetch
+                // forwards status 0, which would throw here and escape the
+                // resolver, hanging the artifact's await. Surface it as a
+                // network-error-shaped rejection instead.
+                try {
+                  resolve(new Response(stream, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: response.headers
+                  }));
+                } catch (err) {
+                  streamControllers.delete(channelId);
+                  reject(new TypeError(
+                    'Bridge fetch: unconstructable response (status ' + response.status + ')'
+                  ));
+                }
+              },
+              reject,
+              channelId
+            });
+            
+            realParent.postMessage({
+              type: 'proxyFetch',
+              id,
+              url,
+              init,
+              channelId
+            }, '*');
+          });
+        };
+
+        window.addEventListener('message', async (event) => {
+          // Only the embedding parent may drive the bridge — sibling and
+          // nested frames can also postMessage into this window.
+          if (event.source !== realParent) return;
+          if (event.data.type === 'takeScreenshot') {
+            // Echo the request's nonce so the requester can correlate the
+            // reply to ITS request — a reply without the expected nonce
+            // (e.g. from a stale pre-remount artifact) is ignored upstream.
+            const screenshotNonce = event.data.nonce;
+            const rootElement = document.getElementById('artifacts-component-root-html');
+            if (!rootElement) {
+              realParent.postMessage({
+                type: 'screenshotError',
+                nonce: screenshotNonce,
+                error: new Error('Root element not found'),
+              }, '*');
+              return;
+            }
+            // Catch CDN load failures and toPng errors so the parent always
+            // gets a response instead of hanging forever.
+            try {
+              const htmlToImage = await loadHtmlToImage();
+              const screenshot = await htmlToImage.toPng(rootElement, {
+                imagePlaceholder:
+                  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
+              });
+              realParent.postMessage({
+                type: 'screenshotData',
+                nonce: screenshotNonce,
+                data: screenshot,
+              }, '*');
+            } catch (err) {
+              realParent.postMessage({
+                type: 'screenshotError',
+                nonce: screenshotNonce,
+                error: err instanceof Error ? err : new Error(String(err)),
+              }, '*');
+            }
+          } else if (event.data.type === 'claudeComplete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.completion);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'proxyFetchResponse') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+              callbacksMap.delete(event.data.id);
+            } else {
+              // Initial response with headers, status, etc.
+              callback.resolve({
+                status: event.data.status,
+                statusText: event.data.statusText,
+                headers: event.data.headers
+              });
+              // Don't delete the callback yet if streaming
+              if (!event.data.body) {
+                callbacksMap.delete(event.data.id);
+              }
+            }
+          } else if (event.data.type === 'proxyFetchStream') {
+            // Handle streaming data chunks
+            const controller = streamControllers.get(event.data.channelId);
+            if (controller) {
+              if (event.data.error) {
+                controller.error(new Error(event.data.error));
+                streamControllers.delete(event.data.channelId);
+              } else if (event.data.done) {
+                controller.close();
+                streamControllers.delete(event.data.channelId);
+                // Clean up the callback
+                const callback = Array.from(callbacksMap.entries()).find(
+                  ([_, value]) => value.channelId === event.data.channelId
+                );
+                if (callback) {
+                  callbacksMap.delete(callback[0]);
+                }
+              } else if (event.data.chunk) {
+                controller.enqueue(new Uint8Array(event.data.chunk));
+              }
+            }
+          } else if (event.data.type === 'storageGet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageSet') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageDelete') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          } else if (event.data.type === 'storageList') {
+            const callback = callbacksMap.get(event.data.id);
+            if (!callback) return;
+            if (event.data.error) {
+              callback.reject(new Error(event.data.error));
+            } else {
+              callback.resolve(event.data.result);
+            }
+            callbacksMap.delete(event.data.id);
+          }
+        });
+
+        window.addEventListener('click', (event) => {
+          const isEl = event.target instanceof HTMLElement;
+          if (!isEl) return;
+    
+          // find ancestor links
+          const linkEl = event.target.closest("a");
+          if (!linkEl || !linkEl.href) return;
+    
+          event.preventDefault();
+          event.stopImmediatePropagation();
+    
+          if (linkEl.href.startsWith("blob-request:")) {
+            const blob = getBlobFromURL(linkEl.href);
+            if (!blob) return;
+            void blob.arrayBuffer().then((data) => {
+              realParent.postMessage({
+                type: "downloadFile",
+                filename: linkEl.download,
+                data,
+                mimeType: blob.type || "application/octet-stream",
+              });
+            });
+          } else if (linkEl.href.startsWith("data:")) {
+            const [header, base64Data] = linkEl.href.split(",");
+            const mimeMatch = header.match(/data:([^;]+)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+            const binaryString = atob(base64Data);
+            const data = Uint8Array.from(binaryString, (c) =>
+              c.charCodeAt(0),
+            ).buffer;
+            realParent.postMessage({
+              type: "downloadFile",
+              filename: linkEl.download,
+              data,
+              mimeType,
+            });
+          } else {
+            let linkUrl;
+            try {
+              linkUrl = new URL(linkEl.href);
+            } catch (error) {
+              return;
+            }
+    
+            if (linkUrl.hostname === window.location.hostname) return;
+      
+            realParent.postMessage({
+              type: 'openExternal',
+              href: linkEl.href,
+            }, '*');
+          }
+      });
+
+        const originalOpen = window.open;
+        window.open = function (url) {
+          realParent.postMessage({
+            type: "openExternal",
+            href: url,
+          }, "*");
+        };
+
+        window.addEventListener('error', (event) => {
+          realParent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
+        });
+      })();
+    </script>
+  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thư viện câu hỏi Training — Đối chiếu help.flyer.vn</title>
+<style>
+  :root{
+    --ink:#1f2430;
+    --sub:#5b6472;
+    --line:#e4e7ec;
+    --bg:#f7f8fa;
+    --card:#ffffff;
+    --brand:#3454d1;
+    --ok-bg:#e6f6ec; --ok-fg:#1a7f4b; --ok-bd:#bfe6cf;
+    --mid-bg:#fff6e0; --mid-fg:#9a6a00; --mid-bd:#f3dfa0;
+    --no-bg:#fdeaea; --no-fg:#b3261e; --no-bd:#f3c6c3;
+    --pri-hi:#b3261e; --pri-mid:#9a6a00;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:32px 20px 80px;}
+  header{margin-bottom:20px;}
+  h1{font-size:1.6rem; margin:0 0 8px; letter-spacing:-0.01em;}
+  .meta{color:var(--sub); font-size:0.92rem; margin:0 0 14px;}
+  .howto{
+    background:#eef1fb; border:1px solid #cfd8f5; border-radius:10px;
+    padding:12px 16px; font-size:0.88rem; color:#33406b; margin-bottom:16px;
+  }
+  .howto b{color:var(--brand);}
+  .legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .badge-static{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 12px; border-radius:999px; font-size:0.85rem; font-weight:600;
+    border:1px solid transparent;
+  }
+  .badge-static.ok{background:var(--ok-bg); color:var(--ok-fg); border-color:var(--ok-bd);}
+  .badge-static.mid{background:var(--mid-bg); color:var(--mid-fg); border-color:var(--mid-bd);}
+  .badge-static.no{background:var(--no-bg); color:var(--no-fg); border-color:var(--no-bd);}
+
+  .toolbar{
+    display:flex; gap:8px; flex-wrap:wrap; margin:20px 0 8px; align-items:center;
+    position:sticky; top:0; background:var(--bg); padding:10px 0; z-index:10;
+  }
+  .filter-btn{
+    border:1px solid var(--line); background:var(--card); color:var(--sub);
+    padding:7px 14px; border-radius:8px; font-size:0.85rem; font-weight:600;
+    cursor:pointer;
+  }
+  .filter-btn.active{background:var(--brand); color:#fff; border-color:var(--brand);}
+  .count-pill{color:var(--sub); font-size:0.85rem;}
+  .spacer{flex:1;}
+  .export-btn{
+    border:none; background:var(--brand); color:#fff; padding:9px 16px;
+    border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer;
+  }
+  .export-btn:hover{background:#2843b0;}
+  .add-btn{
+    border:1px dashed var(--brand); background:#fff; color:var(--brand); padding:9px 16px;
+    border-radius:8px; font-size:0.85rem; font-weight:700; cursor:pointer;
+  }
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; margin:14px 0;
+  }
+  .card h2{
+    font-size:1.02rem; margin:0 0 10px; display:flex; gap:10px; align-items:flex-start;
+  }
+  .qnum{
+    flex:0 0 auto; width:26px; height:26px; border-radius:7px; background:#eef0f6;
+    color:var(--sub); font-size:0.8rem; font-weight:700; display:flex; align-items:center; justify-content:center;
+  }
+  .qtext{flex:1;}
+  .card p{margin:8px 0; font-size:0.94rem;}
+  .card .note{color:var(--sub); font-size:0.9rem;}
+  .links{margin:10px 0 0; padding:0; list-style:none;}
+  .links li{margin:4px 0; font-size:0.88rem;}
+  .links a{color:var(--brand); text-decoration:none;}
+  .links a:hover{text-decoration:underline;}
+
+  .status-select{
+    appearance:none; -webkit-appearance:none;
+    border:1px solid transparent; border-radius:999px; padding:5px 30px 5px 12px;
+    font-size:0.85rem; font-weight:600; cursor:pointer;
+    background-repeat:no-repeat; background-position:right 10px center; background-size:10px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'><path fill='%235b6472' d='M0 0l5 6 5-6z'/></svg>");
+  }
+  .status-select.ok{background-color:var(--ok-bg); color:var(--ok-fg); border-color:var(--ok-bd);}
+  .status-select.mid{background-color:var(--mid-bg); color:var(--mid-fg); border-color:var(--mid-bd);}
+  .status-select.no{background-color:var(--no-bg); color:var(--no-fg); border-color:var(--no-bd);}
+
+  .answer-block{margin-top:12px;}
+  .answer-label{
+    font-size:0.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+    color:var(--sub); margin-bottom:6px; display:block;
+  }
+  textarea.answer-box{
+    width:100%; min-height:70px; resize:vertical;
+    border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    font-family:inherit; font-size:0.92rem; color:var(--ink); background:#fbfbfd;
+  }
+  textarea.answer-box:focus{outline:2px solid var(--brand); outline-offset:1px; background:#fff;}
+
+  h3.section-title{
+    margin:40px 0 14px; font-size:1.15rem; border-top:1px solid var(--line); padding-top:24px;
+  }
+  table{width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; font-size:0.9rem;}
+  th,td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{background:#f0f2f6; font-weight:700; color:var(--sub); font-size:0.8rem; text-transform:uppercase; letter-spacing:.02em;}
+  tr:last-child td{border-bottom:none;}
+  .pri{font-weight:700; padding:3px 9px; border-radius:6px; font-size:0.8rem; display:inline-block;}
+  .pri.Cao{background:var(--no-bg); color:var(--pri-hi);}
+  .pri.Trung{background:var(--mid-bg); color:var(--pri-mid);}
+  footer{color:var(--sub); font-size:0.85rem; margin-top:36px; padding-top:16px; border-top:1px solid var(--line);}
+  @media print{ .toolbar{display:none;} body{background:#fff;} .card{break-inside:avoid;} }
+</style>
+</head>
+<body id="artifacts-component-root-html">
+<div class="wrap">
+
+<header>
+  <h1>Thư viện câu hỏi khách hàng thường gặp (buổi Training)</h1>
+  <p class="meta">Đối chiếu với help.flyer.vn · Cập nhật lần đầu 13/08/2026 · Nguồn: mục lục bài viết tại help.flyer.vn (help.flyer.vn/llms.txt), đã kiểm tra trực tiếp nội dung từng bài liên quan.</p>
+  <div class="howto">
+    ✍️ <b>Cách dùng:</b> với câu hỏi đang 🟡/❌, gõ câu trả lời chính thức vào ô "Câu trả lời / Ghi chú" bên dưới mỗi câu, đổi trạng thái ở ô màu bên phải câu hỏi nếu đã xử lý xong, rồi bấm nút <b>"Tải file đã cập nhật"</b> ở thanh công cụ — hệ thống sẽ tải về một file HTML mới chứa toàn bộ nội dung bạn vừa sửa. Mở lại file đó là chỉnh sửa tiếp được, không cần cài phần mềm gì thêm (không dùng Excel/Word).
+  </div>
+  <div class="legend">
+    <span class="badge-static ok">✅ Đã có</span>
+    <span class="badge-static mid">🟡 Có nhưng chưa đầy đủ</span>
+    <span class="badge-static no">❌ Chưa có</span>
+  </div>
+</header>
+
+<div class="toolbar" id="toolbar">
+  <button class="filter-btn active" data-filter="all">Tất cả (19)</button>
+  <button class="filter-btn" data-filter="ok">✅ Đã có</button>
+  <button class="filter-btn" data-filter="mid">🟡 Chưa đầy đủ</button>
+  <button class="filter-btn" data-filter="no">❌ Chưa có</button>
+  <span class="count-pill" id="countPill">20 / 20 câu hỏi</span>
+  <span class="spacer"></span>
+  <button class="add-btn" id="addBtn">+ Thêm câu hỏi mới</button>
+  <button class="export-btn" id="exportBtn">⬇ Tải file đã cập nhật</button>
+</div>
+
+<div id="cards">
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">1</span><span class="qtext">Giáo viên mua tài khoản và sử dụng các tính năng thì học sinh mà giáo viên cho vào lớp có cần mua tài khoản không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Các bài liên quan ngụ ý học sinh cần gói/tài khoản riêng (GV chọn “gói tài khoản và thời hạn phù hợp cho học sinh”) nhưng không có FAQ trả lời thẳng câu hỏi này.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-tai-khoan-hoc-sinh" target="_blank" rel="noopener">Quản lý tài khoản học sinh</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-tai-khoan-hoc-sinh/tao-tai-khoan-moi-cho-hoc-sinh" target="_blank" rel="noopener">Tạo tài khoản mới cho học sinh</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-tai-khoan-hoc-sinh/nang-cap-gia-han-tai-khoan-cho-hoc-sinh" target="_blank" rel="noopener">Nâng cấp/Gia hạn tài khoản cho học sinh</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-tai-khoan-hoc-sinh/moi-hoc-sinh-tham-gia-truong-lop" target="_blank" rel="noopener">Mời học sinh tham gia trường, lớp</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Đề xuất: Thêm 1 bài FAQ ngắn trả lời trực tiếp: "Tài khoản GV và tài khoản HS là 2 gói riêng biệt — mua tài khoản GV không tự động cấp quyền Premium cho HS trong lớp."
+</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">2</span><span class="qtext">Học viên làm bài lần đầu đạt 60%, làm lại đạt 100%, hệ thống ghi nhận % chính xác là bao nhiêu?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Trang "Xem đáp án và lịch sử làm bài" chỉ nói về cách xem lại lịch sử, không đề cập logic ghi nhận điểm khi làm lại (điểm cao nhất/điểm gần nhất/điểm lần đầu).</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-hoc-sinh/tinh-nang-hoc/xem-dap-an-va-lich-su-lam-bai" target="_blank" rel="noopener">Xem đáp án và lịch sử làm bài</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box" placeholder="Nhập câu trả lời chính thức ở đây...">Hệ thống sẽ ghi nhận điểm số cao nhất và có ghi nhận thêm 1 thông tin nữa là số lần nộp của học sinh
+</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">3</span><span class="qtext">GV có thể chủ động kích hoạt tài khoản cho HS từ phần quản trị không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Xác nhận: GV có Ví FLYER (mua Xu) có thể tự kích hoạt/nâng cấp/gia hạn tài khoản HS mà không cần qua bước trung gian.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/su-dung-xu-tren-vi-flyer" target="_blank" rel="noopener">Sử dụng Xu trên Ví FLYER</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-nha-quan-ly/vi-flyer-mua-va-tao-tai-khoan-truc-tiep" target="_blank" rel="noopener">Ví FLYER - Mua và tạo tài khoản trực tiếp</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-tai-khoan-hoc-sinh/nang-cap-gia-han-tai-khoan-cho-hoc-sinh" target="_blank" rel="noopener">Nâng cấp/Gia hạn tài khoản cho học sinh</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Có. GV có Ví FLYER (đã mua Xu) có thể tự kích hoạt/nâng cấp/gia hạn tài khoản học sinh trực tiếp từ phần quản trị, không cần chờ trung gian.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="mid">
+  <h2><span class="qnum">4</span><span class="qtext">Flyer có hỗ trợ thầy cô chấm chữa bài theo chương trình BGD và chương trình tự soạn không?</span>
+    <select class="status-select mid" onchange="syncStatus(this)">
+      <option value="no" selected="selected">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">"AI Grading" hiện chỉ chấm theo rubric các kỳ thi quốc tế (Cambridge KET/PET, IELTS), không đề cập chương trình BGD. "Chương trình" cho phép GV tự tạo chương trình riêng, nhưng không nói rõ AI Grading có áp dụng được cho đề tự soạn/BGD hay không.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/flyer-help-centre-1/teacher-dashboard/ai-grading" target="_blank" rel="noopener">AI Grading</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/chuong-trinh" target="_blank" rel="noopener">Chương trình</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/tao-bai-tap-de-thi" target="_blank" rel="noopener">Tạo bài tập, đề thi</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Cần làm rõ: phạm vi chấm tự động (AI Grading) áp dụng cho loại đề nào — chỉ đề theo chuẩn quốc tế của Flyer, hay chấm được cả đề tự soạn/theo chương trình BGD.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">5</span><span class="qtext">Coin dùng để làm gì?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Có 2 loại "coin" khác nhau tùy vai trò: <b>Xu</b> (dành cho GV, dùng để kích hoạt/nâng cấp tài khoản HS và mua lượt chấm AI) và <b>Kim Cương</b> (dành cho HS trên Phòng thi ảo, dùng để mở chấm Speaking bằng AI).</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/su-dung-xu-tren-vi-flyer" target="_blank" rel="noopener">Sử dụng Xu trên Ví FLYER</a></li>
+    <li><a href="https://help.flyer.vn/flyer/kim-cuong-tren-phong-thi-ao-flyer" target="_blank" rel="noopener">Kim Cương trên Phòng thi ảo FLYER</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">"Coin" khách thường hỏi có thể là Xu (dành cho GV) hoặc Kim Cương (dành cho HS) — cần hỏi lại khách đang dùng vai trò nào để trả lời đúng loại. Nên thêm 1 bài so sánh ngắn "Xu vs Kim Cương" để tránh nhầm lẫn.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">6</span><span class="qtext">GV mua tài khoản có thể sử dụng tài khoản đó cho con mình học không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Không tìm thấy tài liệu nào đề cập việc GV dùng gói tài khoản đã mua cho con của chính mình.</p>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box" placeholder="Nhập câu trả lời chính thức ở đây... (lưu ý liên quan tới ràng buộc 1 SĐT = 1 tài khoản ở câu 9)">GV mua tài khoản thì tk đó sẽ bao gồm: tài khoản bên Flyer teacher + tk full bên học sinh</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">7</span><span class="qtext">Khi nào thì trung tâm tạo được mục "Create New Account" trong phần thêm học sinh?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Xác nhận đúng: chỉ khi GV/trung tâm đã có <b>Ví FLYER</b> (đã mua trực tiếp trên web) mới xuất hiện tính năng tạo tài khoản mới trực tiếp.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-nha-quan-ly/vi-flyer-mua-va-tao-tai-khoan-truc-tiep" target="_blank" rel="noopener">Ví FLYER - Mua và tạo tài khoản trực tiếp</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-nha-quan-ly/vi-flyer-mua-va-tao-tai-khoan-truc-tiep/tao-tai-khoan-hoc-sinh-chi-danh-cho-thay-co-co-vi-flyer" target="_blank" rel="noopener">Tạo tài khoản học sinh - chỉ dành cho thầy cô có Ví FLYER</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Với New account thì giáo viên sẽ cần phải chủ động mua trực tiếp trên web (Ví FLYER) mới sử dụng được tính năng đó.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">8</span><span class="qtext">Khi gửi domain cho học viên tạo tài khoản thì gửi domain của trung tâm hay domain exam.flyer.us?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Có bài về domain riêng nhưng không hướng dẫn rõ link nào nên gửi cho học sinh đăng ký.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/flyer-help-centre-1/teacher-dashboard/how-to-login-your-custom-domain" target="_blank" rel="noopener">How to login your custom domain?</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-nha-quan-ly/tao-duong-dan-rieng" target="_blank" rel="noopener">Tạo đường dẫn riêng</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Gửi học sinh đường link domain của trung tâm mà Flyer đã tạo sẵn cho trung tâm/GV (không dùng domain chung exam.flyer.us).</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">9</span><span class="qtext">Có thể tạo tài khoản học viên bằng 1 số điện thoại của trung tâm được không? 1 SĐT tạo được bao nhiêu tài khoản? 2 học viên 1 SĐT phụ huynh thì sao? PH hạn chế gửi SĐT thì làm sao?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Trang đăng ký tài khoản học sinh chỉ nói cần số điện thoại + OTP, không đề cập giới hạn 1 SĐT = 1 tài khoản, không đề cập trường hợp phụ huynh có nhiều con hoặc lo ngại chia sẻ SĐT.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-hoc-sinh/dang-ky-dang-nhap-tai-khoan/dang-ky-tai-khoan-hoc-sinh" target="_blank" rel="noopener">Đăng ký tài khoản học sinh</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">KHÔNG nên dùng SĐT trung tâm — vì khi HS quên mật khẩu, mã OTP cấp lại sẽ gửi về SĐT đó. Mỗi số điện thoại chỉ tạo được 1 tài khoản duy nhất. Với phụ huynh có 2 con: dùng SĐT của con, hoặc 1 số của ba/1 số của mẹ để tiện quản lý và nhận thông tin từ thầy cô/trung tâm. Hệ thống thiết kế mỗi SĐT chỉ liên kết 1 tài khoản để đảm bảo bảo mật và tránh trùng lặp dữ liệu.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">10</span><span class="qtext">App giáo viên và Phụ huynh giống nhau? App học viên khác đúng không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Không tìm thấy trang nào trong help center mô tả các app theo vai trò (GV/PH dùng chung app, HS dùng app riêng) hay liệt kê link store.</p>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">App giáo viên và phụ huynh dùng chung 1 app:
+1. AppStore: https://apps.apple.com/vn/app/flyer-for-teachers/id6449689901
+2. Google Play: https://play.google.com/store/apps/details?id=com.flyer.partner
+App học sinh là 1 app riêng:
+1. Android: https://play.google.com/store/apps/details?id=com.flyer.exam
+2. iOS: https://apps.apple.com/us/app/flyer-virtual-english-tests/id1671502218</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">11</span><span class="qtext">Nếu GV/trung tâm chưa kích hoạt tài khoản, phụ huynh có thể tải App PH và theo dõi được không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Không tìm thấy tài liệu đề cập tính năng theo dõi của phụ huynh khi tài khoản HS chưa kích hoạt Premium.</p>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">PH vẫn tải app được và theo dõi các bài làm của con, chỉ không xem được những bài/nội dung premium khi tài khoản chưa được kích hoạt.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="mid">
+  <h2><span class="qnum">12</span><span class="qtext">Các bước tạo tài khoản, kích hoạt tài khoản, tham gia lớp có thể thao tác được hết ở trên app không?</span>
+    <select class="status-select mid" onchange="syncStatus(this)">
+      <option value="no" selected="selected">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Đã xác nhận rõ ràng: <b>kích hoạt tài khoản chỉ thực hiện được trên website</b>, không thể trên app. Tuy nhiên chưa có bài tổng hợp so sánh việc nào làm được trên app, việc nào chỉ làm được trên web.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/flyer/kich-hoat-tai-khoan" target="_blank" rel="noopener">Kích hoạt tài khoản</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-hoc-sinh/dang-ky-dang-nhap-tai-khoan/dang-ky-tai-khoan-hoc-sinh" target="_blank" rel="noopener">Đăng ký tài khoản học sinh</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Tạo tài khoản + tham gia lớp học có thể thao tác trên app. Kích hoạt tài khoản mới chỉ hỗ trợ trên website. Nếu không tiện dùng máy tính, có thể vào bằng trình duyệt điện thoại (Safari) để kích hoạt tài khoản.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="mid">
+  <h2><span class="qnum">13</span><span class="qtext">TT/GV khi tạo thử thách/thách đấu, có thể xem trước được nội dung không?</span>
+    <select class="status-select mid" onchange="syncStatus(this)">
+      <option value="no" selected="selected">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Trang "Thách đấu"/"Tổ chức thách đấu cho học sinh" <b>không đề cập</b> việc không xem trước được nội dung khi tạo thách đấu. Ngược lại, trang "Giao bài tập từ trang Khám phá" đã xác nhận đúng: GV xem trước nội dung trước khi giao bài.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/thach-dau" target="_blank" rel="noopener">Thách đấu</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/thach-dau/to-chuc-thach-dau-cho-hoc-sinh" target="_blank" rel="noopener">Tổ chức thách đấu cho học sinh</a></li>
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/giao-bai-tap-bai-kiem-tra/giao-bai-tap-tu-trang-kham-pha" target="_blank" rel="noopener">Giao bài tập từ trang Khám phá</a> — đã có, xác nhận đúng phần "xem trước"</li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Phần thách đấu sẽ không xem trước được nội dung khi tạo thách đấu. GV/TT muốn xem trước thì chuyển sang giao diện của học sinh để xem trước phần thi. Riêng full test/mini test, GV/TT muốn xem trước nội dung để giao thì vào mục "KHÁM PHÁ" — trước khi giao sẽ xem được trước nội dung giao cho HS.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">14</span><span class="qtext">Làm sao để sử dụng tạo tài khoản giáo viên?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/dang-ky-dang-nhap-tai-khoan/dang-ky-tai-khoan-giao-vien" target="_blank" rel="noopener">Đăng ký tài khoản giáo viên</a></li>
+    <li><a href="https://help.flyer.vn/flyer/kich-hoat-tai-khoan" target="_blank" rel="noopener">Kích hoạt tài khoản</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Thầy cô cần đăng ký và tạo 1 tài khoản, sau đó kích hoạt tài khoản bằng mã code đã được cung cấp.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">15</span><span class="qtext">Với các trung tâm, thầy cô đã tạo và kích hoạt tài khoản rồi, làm thế nào để thêm các thầy cô vào trường?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Bài hiện có nói cần mời qua email/SĐT/username và GV phải có sẵn tài khoản Flyer Teacher, nhưng <b>không đề cập</b> yêu cầu GV phải cập nhật đầy đủ "teacher profile" trước khi được thêm vào trường.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-nha-quan-ly/quan-ly-giao-vien-trong-truong/moi-giao-vien-quan-tri-vien-tham-gia-truong" target="_blank" rel="noopener">Mời giáo viên, quản trị viên tham gia trường</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Để thêm các thầy cô vào trường, khi tạo tài khoản, thầy cô cần cập nhật đầy đủ teacher profile.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">16</span><span class="qtext">Tại phần quản trị của giáo viên, thầy cô có thể đổi tên HS để dễ quản lý không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Trang xem tiến độ/lịch sử học sinh không đề cập tính năng đổi tên.</p>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Có. GV chỉ cần bấm vào tên bạn học sinh, ở trên cùng của tên hiện bút chỉnh sửa, cô ấn sửa tên xong lưu là đổi được tên của các bạn HS.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="mid">
+  <h2><span class="qnum">17</span><span class="qtext">Tại phần thách đấu, có thể gửi lời mời tham gia thách đấu cho các bạn HS ngoài được không?</span>
+    <select class="status-select mid" onchange="syncStatus(this)">
+      <option value="no" selected="selected">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Bài "Tổ chức thách đấu cho học sinh" có đề cập chia sẻ qua "liên kết hoặc mã phòng thách đấu" (ngụ ý mời được người ngoài) nhưng không nói rõ điều kiện "chọn nội dung free" như training đã chốt.</p>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/thach-dau/to-chuc-thach-dau-cho-hoc-sinh" target="_blank" rel="noopener">Tổ chức thách đấu cho học sinh</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Được, khi tạo thách đấu, phần bài làm chọn nội dung free thì học sinh ngoài trường/lớp có thể tham gia qua link/mã phòng.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">18</span><span class="qtext">1 học sinh có thể được thêm vào nhiều lớp không?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <ul class="links">
+    <li><a href="https://help.flyer.vn/danh-cho-giao-vien/quan-ly-lop-hoc/chuyen-lop-cho-hoc-sinh" target="_blank" rel="noopener">Chuyển lớp cho học sinh</a></li>
+  </ul>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box">Không, 1 học sinh chỉ được tham gia vào 1 lớp theo link mã code/link lớp GV gửi.</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="ok">
+  <h2><span class="qnum">19</span><span class="qtext">Học viên/phụ huynh phản ánh đề luyện thi quá khó — hướng giải quyết như thế nào?</span>
+    <select class="status-select ok" onchange="syncStatus(this)">
+      <option value="no">❌ Chưa có</option>
+      <option value="mid">🟡 Chưa đầy đủ</option>
+      <option value="ok" selected="selected">✅ Đã có</option>
+    </select>
+  </h2>
+  <p class="note">Câu hỏi mới phát sinh, chưa nằm trong danh sách training ban đầu. Chưa xác nhận được help.flyer.vn đã có bài hướng dẫn xử lý tình huống này chưa (ví dụ: dùng bài Kiểm tra trình độ đầu vào để xếp đúng level, hay GV chủ động đổi level bài tập/chương trình đang giao).</p>
+  <div class="answer-block">
+    <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+    <textarea class="answer-box" placeholder="Nhập câu trả lời chính thức của đội support/training ở đây...">Hướng dẫn Phụ huynh, học sinh vào làm các phần luyện tập là các dạng câu hỏi chủ đề ngắn phù hợp với học sinh trong quá trình học tập:
+https://exam.flyer.us/libraries
+
+Hoặc tham gia vào nhiệm vụ mà bên trường hoặc giáo viên sẽ giao cho học sinh tương đương với quá trình học tập theo từng loại sách...
+https://exam.flyer.us/mission</textarea>
+  </div>
+</div>
+
+<div class="card" data-status="no">
+      <h2><span class="qnum">20</span><span class="qtext" contenteditable="true" style="outline:none; border-bottom:1px dashed var(--line);">Gõ câu hỏi mới vào đây...</span>
+        <select class="status-select no" onchange="syncStatus(this)">
+          <option value="no" selected="selected">❌ Chưa có</option>
+          <option value="mid">🟡 Chưa đầy đủ</option>
+          <option value="ok">✅ Đã có</option>
+        </select>
+      </h2>
+      <div class="answer-block">
+        <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+        <textarea class="answer-box" placeholder="Nhập câu trả lời chính thức ở đây..."></textarea>
+      </div></div></div>
+
+<h3 class="section-title">Tổng hợp: Đề xuất bổ sung tài liệu mới cho help.flyer.vn</h3>
+<table>
+  <thead><tr><th style="width:36px;">#</th><th>Chủ đề cần viết mới / bổ sung</th><th style="width:110px;">Ưu tiên</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>FAQ: Tài khoản GV và tài khoản HS trong lớp — có phải mua riêng không</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>2</td><td>Giải thích quy tắc ghi nhận % / điểm khi học sinh làm lại bài nhiều lần</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>3</td><td>Bài so sánh "Xu" (GV) vs "Kim Cương" (HS) — tránh nhầm lẫn khi hỏi chung là "Coin"</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>4</td><td>Làm rõ phạm vi AI Grading: có áp dụng cho đề tự soạn/chương trình BGD không, hay chỉ đề chuẩn quốc tế</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>5</td><td>FAQ: GV mua tài khoản có dùng được cho con mình học không</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>6</td><td>Làm rõ nên gửi domain nào cho học sinh đăng ký (domain riêng trung tâm, không dùng domain chung)</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>7</td><td>FAQ về số điện thoại: không dùng SĐT trung tâm để tạo TK HS; 1 SĐT = 1 TK; cách xử lý khi PH có 2 con hoặc ngại chia sẻ SĐT</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>8</td><td>Bài giới thiệu hệ sinh thái App: App GV &amp; PH (chung) vs App Học sinh (riêng) + link tải</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>9</td><td>FAQ: PH có thể theo dõi con qua app khi tài khoản HS chưa kích hoạt Premium không</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>10</td><td>Bài tổng hợp: việc nào làm được trên App, việc nào chỉ làm được trên Web (tạo TK/kích hoạt/tham gia lớp)</td><td><span class="pri Cao">Cao</span></td></tr>
+    <tr><td>11</td><td>Bổ sung rõ trong bài Thách đấu: không xem trước được nội dung khi tạo, cách xem trước (qua giao diện HS)</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>12</td><td>Cập nhật bài mời GV vào trường: yêu cầu hoàn thiện teacher profile</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>13</td><td>FAQ: cách đổi tên học sinh trong phần quản trị GV</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>14</td><td>Bổ sung rõ điều kiện mời HS ngoài trường/lớp vào thách đấu (chọn nội dung free)</td><td><span class="pri Trung">Trung bình</span></td></tr>
+    <tr><td>15</td><td>Hướng xử lý khi học viên/phụ huynh phản ánh đề luyện thi quá khó (câu #19 — đang chờ câu trả lời chuẩn)</td><td><span class="pri Cao">Cao</span></td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Nguồn đối chiếu: help.flyer.vn. Toàn bộ câu trả lời "chuẩn" lấy từ nội dung training do bạn cung cấp hoặc do bạn tự điền/cập nhật trong file này — cần đội content/support xác nhận lại trước khi đăng chính thức lên help.flyer.vn.
+</footer>
+
+</div>
+
+<script>
+  const buttons = document.querySelectorAll('.filter-btn');
+  const countPill = document.getElementById('countPill');
+
+  function currentCards(){ return document.querySelectorAll('#cards > .card'); }
+
+  function applyFilter(filter){
+    let visible = 0;
+    currentCards().forEach(c => {
+      const show = filter === 'all' || c.dataset.status === filter;
+      c.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    countPill.textContent = visible + ' / ' + currentCards().length + ' câu hỏi';
+  }
+
+  let activeFilter = 'all';
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      buttons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      applyFilter(activeFilter);
+    });
+  });
+
+  // Sync a status <select> -> updates badge color, card data-status, and the toolbar filter counts
+  function syncStatus(select){
+    select.className = 'status-select ' + select.value;
+    const card = select.closest('.card');
+    card.dataset.status = select.value;
+    applyFilter(activeFilter);
+  }
+
+  // Add a new blank question card
+  document.getElementById('addBtn').addEventListener('click', () => {
+    const cardsWrap = document.getElementById('cards');
+    const n = currentCards().length + 1;
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.dataset.status = 'no';
+    div.innerHTML = `
+      <h2><span class="qnum">${n}</span><span class="qtext" contenteditable="true" style="outline:none; border-bottom:1px dashed var(--line);">Gõ câu hỏi mới vào đây...</span>
+        <select class="status-select no" onchange="syncStatus(this)">
+          <option value="no" selected>❌ Chưa có</option>
+          <option value="mid">🟡 Chưa đầy đủ</option>
+          <option value="ok">✅ Đã có</option>
+        </select>
+      </h2>
+      <div class="answer-block">
+        <span class="answer-label">Câu trả lời / Ghi chú (điền để cập nhật)</span>
+        <textarea class="answer-box" placeholder="Nhập câu trả lời chính thức ở đây..."></textarea>
+      </div>`;
+    cardsWrap.appendChild(div);
+    applyFilter(activeFilter);
+    div.scrollIntoView({behavior:'smooth', block:'center'});
+  });
+
+  // Export the whole page (with your edits baked in) as a new, still-editable HTML file
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    // bake live textarea values back into the markup so they survive serialization
+    document.querySelectorAll('textarea.answer-box').forEach(t => { t.textContent = t.value; });
+    // bake live select choices back into the markup
+    document.querySelectorAll('select.status-select').forEach(s => {
+      Array.from(s.options).forEach(o => o.removeAttribute('selected'));
+      s.options[s.selectedIndex].setAttribute('selected', 'selected');
+    });
+    const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([htmlContent], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'thu-vien-cau-hoi-training-capnhat.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  applyFilter('all');
+</script>
+
+
+
+</body><ddict-div style="visibility: visible !important;"></ddict-div></html>
